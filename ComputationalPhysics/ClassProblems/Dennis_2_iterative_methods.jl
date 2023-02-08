@@ -18,6 +18,7 @@ function fixed_point_iteration(A::AbstractMatrix; atol=1e-8, maxiters::Integer =
 
     #? 1) Pick arbitrary vector:
     y = rand(size(A)[1])
+    local x  # to access x outside while-loop
     while true
         if counter ≥ maxiters
             @warn "Reached maximal number of iterations ($maxiters).\nTerminating."
