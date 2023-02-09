@@ -13,7 +13,7 @@ Return interface transformation matrix
 """
 I(n₁, n₂) = 1/2 * [
     1+n₂/n₁     1-n₂/n₁
-    1-n₂/n₁     1-n₂/n₁
+    1-n₂/n₁     1+n₂/n₁
 ]
 
 """
