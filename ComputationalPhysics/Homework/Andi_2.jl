@@ -9,11 +9,12 @@
 
 
 using Plots
+plotly()
 
 x=0:0.01:5
 y=x.^2
 # @show(y)
-plot(x,y)
+Plots.plot(x,y)
 
 ## Lotka-Volterra coupled differential equation
 
@@ -41,10 +42,10 @@ for i in 1:(N-1)
 end
 # @show(y)
 
-plot(t,y[:,1], lw = 5, c=:blue, labels="Mice")
-plot!(t,y[:,2], lw = 5, c=:red, labels="Cats", legend=:topleft)
-plot!(title = "Lotka Volterra diff.eq.", label = ["Mice" "Cats"])
-xlabel!("Time [e.g. years]")
-ylabel!("Population []")
-plot!(xlims=(0,t_tot),xticks=0:1:t_tot)
-plot!(ylims=(0,60))
+Plots.plot(t,y[:,1], lw = 5, c=:blue, labels="Mice")
+Plots.plot!(t,y[:,2], lw = 5, c=:red, labels="Cats", legend=:topleft)
+Plots.plot!(title = "Lotka Volterra diff.eq.", label = ["Mice" "Cats"])
+Plots.xlabel!("Time [e.g. years]")
+Plots.ylabel!("Population []")
+Plots.plot!(xlims=(0,t_tot),xticks=0:1:t_tot)
+Plots.plot!(ylims=(0,60))
