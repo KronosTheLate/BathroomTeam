@@ -82,16 +82,16 @@ with_theme(resolution=(1920÷2, 1080÷2.2)) do
         reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
         E_lost = 1 .- transmittances .- reflectances
 
-        fig, ax, plt = lines(k₀s, transmittances, label="Transmittance")
+        fig, ax1, plt1 = lines(k₀s, transmittances, label="Transmittance")
         lines!(k₀s, reflectances, label="Reflectance")
         axislegend(position=(1, 0.5))
-        lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+        ax2, plt2 = lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
         axislegend(position=(1, 0))
         Label(fig[end+1, :], "Indices of refraction:   "* join(n⃗s, "   "), tellwidth=false, textsize=24)
         Label(fig[end+1, :], rpad("Thicknesses:", 27)* join(D⃗s, "   "), tellwidth=false, textsize=24)
-        ax.xlabel = "k₀"
-        ax.ylabel = "Value"
-        ax.title = "$n_interfaces interfaces and $n_propagations propagations"
+        ax1.xlabel = "k₀"
+        ax1.ylabel = "Value"
+        ax1.title = "$n_interfaces interfaces and $n_propagations propagations"
         fig |> display
         # transmittances|>display
     end
@@ -107,21 +107,23 @@ with_theme(resolution=(1920÷2, 1080÷2.2)) do
         n⃗s[end÷2] = n_central
         D⃗s = ones(Int64, n_propagations)
         k₀s = range(0, 3, 1000)
-
-        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
-        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        offset = 1e-30
+        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s] .+ offset
+        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s] .+ offset
         E_lost = 1 .- transmittances .- reflectances
 
-        fig, ax, plt = lines(k₀s, transmittances, label="Transmittance")
+        fig, ax1, plt1 = lines(k₀s, transmittances, label="Transmittance")
         lines!(k₀s, reflectances, label="Reflectance")
+        ax1.yscale = log10
         axislegend(position=(1, 0.5))
-        lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+
+        ax2, plt3 = lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
         axislegend(position=(1, 0))
         Label(fig[end+1, :], "Indices of refraction:   "* join(n⃗s, "   "), tellwidth=false, textsize=24)
         Label(fig[end+1, :], rpad("Thicknesses:", 27)* join(D⃗s, "   "), tellwidth=false, textsize=24)
-        ax.xlabel = "k₀"
-        ax.ylabel = "Value"
-        ax.title = "$n_interfaces interfaces and $n_propagations propagations"
+        ax1.xlabel = "k₀"
+        ax1.ylabel = "Value"
+        ax1.title = "$n_interfaces interfaces and $n_propagations propagations.\n$(round(offset, sigdigits=3, RoundUp)) has been added to T and R for log scale"
         fig |> display
         # transmittances|>display
     end
