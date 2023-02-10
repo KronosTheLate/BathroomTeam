@@ -6,7 +6,7 @@ using GLMakie; Makie.inline!(true)  # Plotting package. inline to use plot pane.
 """
 Return propagation transformation matrix
 """
-P(n, D, k₀) = [cis(-n*D*k₀) 0; 0 cis(-n*D*k₀)]
+P(n, D, k₀) = [cis(n*D*k₀) 0; 0 cis(-n*D*k₀)]
 
 """
 Return interface transformation matrix
@@ -21,7 +21,7 @@ function transfer_matrix(n⃗, D⃗, k₀)
     # This means that you propegate D⃗[1] in medium of n = n⃗[2], as no propagation occurs in n⃗[1]
 
     # Need 2 values of n for initial and final medium, and both n & D for mediums in between.
-    (length(n⃗) == length(D⃗)+2)  ||  throw(ArgumentError("Expected `x+2` refractive indices for `x` distances.\nGot $(length(n⃗)) refractive indices and $(length(D⃗)) distances."))
+    (length(n⃗) == length(D⃗)+2)  ||  throw(DimensionMismatch("Expected `x+2` refractive indices for `x` distances.\nGot $(length(n⃗)) refractive indices and $(length(D⃗)) distances."))
     tm = I(n⃗[1], n⃗[2])
     for i in eachindex(D⃗)
         tm = P(n⃗[i+1], D⃗[i], k₀) * tm  # propagation
@@ -42,30 +42,89 @@ function reflectance(args...)
     return abs2(tm_[2, 1]/tm_[2, 2])
 end
 
-##
+##¤ d) part 1
+with_theme(resolution=(1920÷2, 1080÷2.2)) do
+    for n_interfaces in (11, 21, 41)
+        n_propagations = n_interfaces-2               # Just being very explicit for myself
+        n⃗s = [iseven(i) ? 1 : 2 for i in 1:n_interfaces]
+        D⃗s = ones(n_propagations)
+        k₀s = range(0, 3, 1000)
 
-let # using let block for namespace hygiene
-    n_interfaces = 10                   # or 20, or 40      
-    n_propagations = n_interfaces-2               # Just being very explicit for myself
-    n⃗s = [iseven(i) ? 1 : 2 for i in 1:n_interfaces]
-    D⃗s = ones(n_propagations)
-    k₀s = range(0, 3, 1000)
+        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        E_lost = 1 .- transmittances .- reflectances
 
-    transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
-    reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
-    E_lost = 1 .- transmittances .- reflectances
-
-    fig, ax, plt = scatterlines(k₀s, transmittances, label="Transmittance")
-    scatterlines!(k₀s, reflectances, label="Reflectance")
-    scatterlines!(k₀s, E_lost, label=L"E_{lost}")
-    Legend(fig[1, 2], ax)
-    ax.xlabel = "k₀"
-    ax.ylabel = "Value"
-    fig |> display
-    # transmittances|>display
+        fig, ax, plt = lines(k₀s, transmittances, label="Transmittance")
+        lines!(k₀s, reflectances, label="Reflectance")
+        axislegend(position=(1, 0.5))
+        lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+        axislegend(position=(1, 0))
+        ax.xlabel = "k₀"
+        ax.ylabel = "Value"
+        ax.title = "$n_interfaces interfaces and $n_propagations propagations"
+        fig |> display
+        # transmittances|>display
+    end
 end
 
-let # Verifying that abs2 of a complex number gives same as norm squared
-    x = 17*cis(deg2rad(77))
-    norm(x)^2, abs2(x)
+##¤ d) part 2
+with_theme(resolution=(1920÷2, 1080÷2.2)) do
+    let n_interfaces = 11
+        n_propagations = n_interfaces-2               # Just being very explicit for myself
+        n⃗s = [iseven(i) ? 1 : 2 for i in 1:n_interfaces]
+        n⃗s[end÷2] += 3
+        n⃗s[end÷2+3] += 3
+        D⃗s = ones(Int64, n_propagations)
+        D⃗s[2] += 17
+        k₀s = range(0, 3, 1000)
+
+        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        E_lost = 1 .- transmittances .- reflectances
+
+        fig, ax1, plt1 = lines(k₀s, transmittances, label="Transmittance")
+        lines!(k₀s, reflectances, label="Reflectance")
+        axislegend(position=(1, 0.5))
+        ax2, plt2 = lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+        axislegend(position=(1, 0))
+        Label(fig[end+1, :], "Indices of refraction:   "* join(n⃗s, "   "), tellwidth=false, textsize=24)
+        Label(fig[end+1, :], rpad("Thicknesses:", 27)* join(D⃗s, "   "), tellwidth=false, textsize=24)
+        ax1.xlabel = "k₀"
+        ax1.ylabel = "Value"
+        ax1.title = "$n_interfaces interfaces and $n_propagations propagations"
+        fig |> display
+        # transmittances|>display
+    end
+end
+
+##¤ e)
+
+with_theme(resolution=(1920÷2, 1080÷2.2)) do
+    for n_central in (2+5im, 2+10im, 2+15im)
+        n_interfaces = 11
+        n_propagations = n_interfaces-2               # Just being very explicit for myself
+        n⃗s = Any[iseven(i) ? 1 : 2 for i in 1:n_interfaces]
+        n⃗s[end÷2] = n_central
+        D⃗s = ones(Int64, n_propagations)
+        k₀s = range(0, 3, 1000)
+        offset = 1e-30
+        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s] .+ offset
+        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s] .+ offset
+        E_lost = 1 .- transmittances .- reflectances
+
+        fig, ax1, plt1 = lines(k₀s, transmittances, label="Transmittance")
+        lines!(k₀s, reflectances, label="Reflectance")
+        ax1.yscale = log10
+        axislegend(position=(1, 0.5))
+
+        ax2, plt3 = lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+        axislegend(position=(1, 0))
+        Label(fig[end+1, :], "Indices of refraction:   "* join(n⃗s, "   "), tellwidth=false, textsize=24)
+        Label(fig[end+1, :], rpad("Thicknesses:", 27)* join(D⃗s, "   "), tellwidth=false, textsize=24)
+        ax1.xlabel = "k₀"
+        ax1.ylabel = "Value"
+        ax1.title = "$n_interfaces interfaces and $n_propagations propagations.\n$(round(offset, sigdigits=3, RoundUp)) has been added to T and R for log scale"
+        fig |> display
+        # transmittances|>display
+    end
 end
