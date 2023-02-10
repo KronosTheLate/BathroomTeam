@@ -1,18 +1,15 @@
-
-#JUST TESTING GIT!!!  -ANDI
-
-
-
-using LinearAlgebra
+using LinearAlgebra # Just to get identity matrix
 using Plots
-plotly()
+plotly() # Interactive plots
 
+#Subtask a
 function propagationM(n,D,k)
     P=[exp(im*n*D*k) 0;
-       0 -exp(im*n*D*k)] #NOTE THE MINUS SIGN! I had to derive this from the start. Can easily overllok it.
+       0 exp(-im*n*D*k)] #NOTE THE MINUS SIGN! I had to derive this from the start. Can easily overlook it.
     return P
 end
 
+#Subtask b
 function interfaceM(nᵢ₋₁,nᵢ)
     nr=nᵢ/nᵢ₋₁
     I=1/2*[1+nr   1-nr;
@@ -21,10 +18,12 @@ function interfaceM(nᵢ₋₁,nᵢ)
     # See some of the derivation for this 
     # matrix on paper (I almost derived it)
 end
+# display(propagationM(1.5,1,1))
+# display(interfaceM(1,2))
 
-#@show(propagationM(1.5,1,1))
-#@show(interfaceM(1,2))
 
+
+#Subtask c
 
 # T can be represented as a product matrices, since each P, I pair 
 # describes all propagation in one layer. Then the next 
@@ -32,7 +31,6 @@ end
 # The reason why the matrices are multiplied "backwards" is simpy 
 # the definition of this ray/propagation ABCD matrices. 
 # output=ABCD*input, where output is the next input for the next layer.
-
 
 function transferM(n,D,k₀)
     if size(n,1)!=size(D,1)+2
@@ -54,94 +52,95 @@ function transferM(n,D,k₀)
     return T
 end
 
-k₀_val=1
+#Test transfer matrix:
+# k₀_val=1
+# T=transferM(n,D,k₀_val)
+# display(T)
+# Trans=abs(T[1,1]-T[1,2]*T[2,1]/T[2,2])^2
+# Refl=abs(T[2,1]/T[2,2])^2
 
-# N=10
+#Subtask d
+function RT_Cal_Plot(n,D)
+    N=1001
+    j=1
+    TransM=Array{Float64}(undef,N,1)
+    ReflM=Array{Float64}(undef,N,1)
+    lossM=Array{Float64}(undef,N,1)
+    k₀M=LinRange(0, 3, N)
+    for k₀ in k₀M
+        T=transferM(n,D,k₀)
+        # display(T)
 
-# n=transpose([1 2 1])
-# D=transpose([1])
+        TransM[j]=abs(T[1,1]-T[1,2]*T[2,1]/T[2,2])^2
+        ReflM[j]=abs(T[2,1]/T[2,2])^2
+        lossM[j]=1-TransM[j]-ReflM[j]
+        j+=1
+    end
+
+
+    Plots.plot(k₀M,lossM, labels="loss")
+    Plots.plot!(title = "Relative energy loss of stack of dielectric layers")
+    Plots.plot!(legend=:right)
+    Plots.xlabel!("k₀ [m⁻¹]")
+    loss_plot=Plots.ylabel!("Relative energy loss [ ]")
+    display(loss_plot)
+
+    Plots.plot(k₀M,TransM, labels="T")
+    Plots.plot!(k₀M,ReflM, labels="R")
+    Plots.plot!(title = "Reflectance and Transmittance of stack of dielectric layers")
+    Plots.plot!(legend=:right)
+    Plots.xlabel!("k₀ [m⁻¹]")
+    TR_plot=Plots.ylabel!("Part of energy [ ]")
+    display(TR_plot)
+end
+
+## 
 
 n1=1
 n2=2
+# n=transpose([1 1.2 1.4 1 1.8 2 1.8 1 1.4 1.2 1]) # To play around
+n=transpose([1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1])
+# D=transpose([1 2 3 0.5 1 0.5 3 2 1]) # To play around
+D=transpose([1 1 1 1 1 1 1 1 1])
+RT_Cal_Plot(n,D)
+
+##
+
+Fourpair=transpose([n2 n1 n2 n1 n2 n1 n2 n1])
+n=vcat(1, Fourpair, Fourpair, n2, n1, n2 , 1)
+D=ones(size(n,1)-2)
+RT_Cal_Plot(n,D)
+
+##
+
+Fourpair=transpose([n2 n1 n2 n1 n2 n1 n2 n1])
+n=vcat(1, Fourpair, Fourpair, Fourpair, Fourpair, n2, n1, n2, n1, n2, n1, n2, 1)
+D=ones(size(n,1)-2)
+RT_Cal_Plot(n,D)
+
+##
+
+#Subtask e
+n1=1
+n2=2+5*im
 n=transpose([1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1])
 D=transpose([1 1 1 1 1 1 1 1 1])
+RT_Cal_Plot(n,D)
 
-
-T=transferM(n,D,k₀_val)
-display(T)
-
-Trans=abs(T[1,1]-T[1,2]*T[2,1]/T[2,2])^2
-Refl=abs(T[2,1]/T[2,2])^2
-
+##
 
 n1=1
-n2=2
+n2=2+10*im
 n=transpose([1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1])
 D=transpose([1 1 1 1 1 1 1 1 1])
-
-N=1001
-j=1
-TransM=Matrix{Float64}(undef,N,1)
-ReflM=Matrix{Float64}(undef,N,1)
-k₀M=LinRange(0, 3, N)
-for k₀ in k₀M
-    T=transferM(n,D,k₀)
-    # display(T)
-
-    TransM[j]=abs(T[1,1]-T[1,2]*T[2,1]/T[2,2])^2
-    ReflM[j]=abs(T[2,1]/T[2,2])^2
-    j+=1
-end
-
-
-Plots.plot(k₀M,TransM, labels="T")
-Plots.plot!(k₀M,ReflM, labels="R")
+RT_Cal_Plot(n,D)
 
 ##
-for i in 1:1:10
-    display(i)
-end
-display(1:1:10)
-##
 
-# using Plots
-# plotly()
-
-# x=0:0.01:5
-# y=x.^2
-# # @show(y)
-# Plots.plot(x,y)
-
-# ## Lotka-Volterra coupled differential equation
-
-# function LotkaVolterra(y::Vector,dt;α=1,β=0.1,γ=2,δ=0.05)
-#     🐁=y[1]
-#     🐈=y[2]
-#     d🐁  = (α*🐁 - β*🐁*🐈)*dt
-#     d🐈 = (-γ*🐈 + δ*🐁*🐈)*dt
-#     return dy=[d🐁, d🐈]
-# end
+n1=1
+n2=2+15*im
+n=transpose([1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1])
+D=transpose([1 1 1 1 1 1 1 1 1])
+RT_Cal_Plot(n,D)
 
 
-
-# dt=0.001
-# N=Int.(10/dt) 
-# t_tot=dt*N
-# t=0:dt:t_tot-dt
-# y=zeros(N,2)
-
-# y_init=[50,15]
-
-# y[1,:]=y_init
-# for i in 1:(N-1)
-#     y[i+1,:]=y[i,:]+LotkaVolterra(y[i,:],dt)
-# end
-# # @show(y)
-
-# Plots.plot(t,y[:,1], lw = 5, c=:blue, labels="Mice")
-# Plots.plot!(t,y[:,2], lw = 5, c=:red, labels="Cats", legend=:topleft)
-# Plots.plot!(title = "Lotka Volterra diff.eq.", label = ["Mice" "Cats"])
-# Plots.xlabel!("Time [e.g. years]")
-# Plots.ylabel!("Population []")
-# Plots.plot!(xlims=(0,t_tot),xticks=0:1:t_tot)
-# Plots.plot!(ylims=(0,60))
