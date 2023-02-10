@@ -9,7 +9,7 @@ plotly()
 
 function propagationM(n,D,k)
     P=[exp(im*n*D*k) 0;
-       0 -exp(im*n*D*k)] #NOTE THE MINUS SIGN! I had to derive this from the start. Can easily overllok it.
+       0 exp(-im*n*D*k)] #NOTE THE MINUS SIGN! I had to derive this from the start. Can easily overllok it.
     return P
 end
 
