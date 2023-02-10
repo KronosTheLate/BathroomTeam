@@ -42,26 +42,87 @@ function reflectance(args...)
     return abs2(tm_[2, 1]/tm_[2, 2])
 end
 
-##
+##¤ d) part 1
+with_theme(resolution=(1920÷2, 1080÷2.2)) do
+    for n_interfaces in (11, 21, 41)
+        n_propagations = n_interfaces-2               # Just being very explicit for myself
+        n⃗s = [iseven(i) ? 1 : 2 for i in 1:n_interfaces]
+        D⃗s = ones(n_propagations)
+        k₀s = range(0, 3, 1000)
 
-let # using let block for namespace hygiene
-    n_interfaces = 41                   # or 21, or 41
-    n_propagations = n_interfaces-2               # Just being very explicit for myself
-    n⃗s = [iseven(i) ? 1 : 2 for i in 1:n_interfaces]
-    D⃗s = ones(n_propagations)
-    k₀s = range(0, 3, 1000)
+        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        E_lost = 1 .- transmittances .- reflectances
 
-    transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
-    reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
-    E_lost = 1 .- transmittances .- reflectances
+        fig, ax, plt = lines(k₀s, transmittances, label="Transmittance")
+        lines!(k₀s, reflectances, label="Reflectance")
+        axislegend(position=(1, 0.5))
+        lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+        axislegend(position=(1, 0))
+        ax.xlabel = "k₀"
+        ax.ylabel = "Value"
+        ax.title = "$n_interfaces interfaces and $n_propagations propagations"
+        fig |> display
+        # transmittances|>display
+    end
+end
 
-    fig, ax, plt = lines(k₀s, transmittances, label="Transmittance")
-    lines!(k₀s, reflectances, label="Reflectance")
-    lines!(k₀s, E_lost, label=L"E_{lost}")
-    Legend(fig[1, 2], ax)
-    ax.xlabel = "k₀"
-    ax.ylabel = "Value"
-    ax.title = "$n_interfaces interfaces and $n_propagations propagations"
-    fig |> display
-    # transmittances|>display
+##¤ d) part 2
+with_theme(resolution=(1920÷2, 1080÷2.2)) do
+    let n_interfaces = 11
+        n_propagations = n_interfaces-2               # Just being very explicit for myself
+        n⃗s = [iseven(i) ? 1 : 2 for i in 1:n_interfaces]
+        n⃗s[end÷2] += 3
+        n⃗s[end÷2+3] += 3
+        D⃗s = ones(Int64, n_propagations)
+        D⃗s[2] += 17
+        k₀s = range(0, 3, 1000)
+
+        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        E_lost = 1 .- transmittances .- reflectances
+
+        fig, ax, plt = lines(k₀s, transmittances, label="Transmittance")
+        lines!(k₀s, reflectances, label="Reflectance")
+        axislegend(position=(1, 0.5))
+        lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+        axislegend(position=(1, 0))
+        Label(fig[end+1, :], "Indices of refraction:   "* join(n⃗s, "   "), tellwidth=false, textsize=24)
+        Label(fig[end+1, :], rpad("Thicknesses:", 27)* join(D⃗s, "   "), tellwidth=false, textsize=24)
+        ax.xlabel = "k₀"
+        ax.ylabel = "Value"
+        ax.title = "$n_interfaces interfaces and $n_propagations propagations"
+        fig |> display
+        # transmittances|>display
+    end
+end
+
+##¤ e)
+
+with_theme(resolution=(1920÷2, 1080÷2.2)) do
+    for n_central in (2+5im, 2+10im, 2+15im)
+        n_interfaces = 11
+        n_propagations = n_interfaces-2               # Just being very explicit for myself
+        n⃗s = Any[iseven(i) ? 1 : 2 for i in 1:n_interfaces]
+        n⃗s[end÷2] = n_central
+        D⃗s = ones(Int64, n_propagations)
+        k₀s = range(0, 3, 1000)
+
+        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        E_lost = 1 .- transmittances .- reflectances
+
+        fig, ax, plt = lines(k₀s, transmittances, label="Transmittance")
+        lines!(k₀s, reflectances, label="Reflectance")
+        axislegend(position=(1, 0.5))
+        lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+        axislegend(position=(1, 0))
+        Label(fig[end+1, :], "Indices of refraction:   "* join(n⃗s, "   "), tellwidth=false, textsize=24)
+        Label(fig[end+1, :], rpad("Thicknesses:", 27)* join(D⃗s, "   "), tellwidth=false, textsize=24)
+        ax.xlabel = "k₀"
+        ax.ylabel = "Value"
+        ax.title = "$n_interfaces interfaces and $n_propagations propagations"
+        fig |> display
+        # transmittances|>display
+    end
 end
