@@ -25,19 +25,20 @@ end
 
 #Subtask c
 
-# T can be represented as a product matrices, since each P, I pair 
+# T can be represented as a product of matrices, since each P-I pair 
 # describes all propagation in one layer. Then the next 
-# propagation is smiply yet another P, I pair. 
+# propagation is smiply yet another P-I pair. 
 # The reason why the matrices are multiplied "backwards" is simpy 
 # the definition of this ray/propagation ABCD matrices. 
 # output=ABCD*input, where output is the next input for the next layer.
 
 function transferM(n,D,k₀)
     if size(n,1)!=size(D,1)+2
-        throw(DimensionMismatch("n must be 2 larger than D"))
+        throw(DimensionMismatch("n must be 2 larger than D")) 
+        # n contains the outer atomosphere before and after the layers
     end
-    T=LinearAlgebra.I
-    for i in 1:size(D,1)
+    T=LinearAlgebra.I # Initialize as the identity matrix
+    for i in 1:size(D,1) # T= I* [P⁽ᴺ⁾I⁽ᴺ⁾...P⁽²⁾I⁽²⁾P⁽¹⁾I⁽¹⁾]. Calculate the square parenthesis
         I=interfaceM(n[i],n[i+1])
         # @show(I)
         P=propagationM(n[i+1],D[i],k₀)
@@ -47,7 +48,7 @@ function transferM(n,D,k₀)
     end
     I=interfaceM(n[size(D,1)+1],n[size(D,1)+2])
     # @show(I)
-    T=I*T
+    T=I*T # Multiply the last interface
     # @show(T)
     return T
 end
@@ -60,7 +61,7 @@ end
 # Refl=abs(T[2,1]/T[2,2])^2
 
 #Subtask d
-function RT_Cal_Plot(n,D)
+function RT_Cal_Plot(n,D) #Calculates: Transfermatrix - T and R and loss. For N points. Plots this.
     N=1001
     j=1
     TransM=Array{Float64}(undef,N,1)
@@ -113,12 +114,14 @@ RT_Cal_Plot(n,D)
 
 ##
 
-Fourpair=transpose([n2 n1 n2 n1 n2 n1 n2 n1])
+Fourpair=transpose([n2 n1 n2 n1 n2 n1 n2 n1]) #Just to make the  notation a little shorter. I like the explicit "1" in the beginning and end.
 n=vcat(1, Fourpair, Fourpair, Fourpair, Fourpair, n2, n1, n2, n1, n2, n1, n2, 1)
 D=ones(size(n,1)-2)
 RT_Cal_Plot(n,D)
 
 ##
+
+
 
 #Subtask e
 n1=1
