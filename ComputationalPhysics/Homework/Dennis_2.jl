@@ -6,7 +6,10 @@ using GLMakie; Makie.inline!(true)  # Plotting package. inline to use plot pane.
 """
 Return propagation transformation matrix
 """
-P(n, D, k₀) = cis(-n*D*k₀) * LinearAlgebra.I  # I is identity matrix, from LinearAlgebra module
+P(n, D, k₀) = [cis(-n*D*k₀) 0; 0 cis(-n*D*k₀)]
+
+#Andi's def:
+P(n, D, k₀) = [cis(n*D*k₀) 0; 0 -cis(n*D*k₀)]
 
 """
 Return interface transformation matrix
@@ -20,7 +23,7 @@ I(n₁, n₂) = 1/2 * [
 Given a vector of refractive indexes n⃗ and 
 distances D⃗, return transfer matrix.
 """
-function T(n⃗, D⃗, k₀)
+function blafunc(n⃗, D⃗, k₀)
     # Assume first and last transformations are transmissions, with propagation between each.
     # This means that you propegate D⃗[1] in medium of n = n⃗[2], as no propagation occurs in n⃗[1]
 
@@ -31,9 +34,24 @@ function T(n⃗, D⃗, k₀)
         transfer_matrix = P(n⃗[i+1], D⃗[i], k₀) * transfer_matrix  # propagation
         transfer_matrix = I(n⃗[i+1], n⃗[i+2])   * transfer_matrix    # interface
     end
-    return transfer_matrix
+    println("Displaying transfer_matrix")
+    display(transfer_matrix)
+    @show typeof(transfer_matrix)
+    transfer_matrix
 end
+blafunc([1, 2, 3], [4], 5)
 
+
+function T()
+    my_matrix = rand(2, 2)
+    println("Displaying my_matrix")
+    display(my_matrix)
+    @show typeof(my_matrix)
+    return my_matrix
+end
+𝚃()
+𝚃([1, 2, 3], [4], 5)
+P(1, 1, 1)
 """
 Transmittance. Typed by \\ttT<tab>
 """
@@ -59,19 +77,20 @@ let # using let block for namespace hygiene
     n_propagations = n_interfaces-2               # Just being very explicit for myself
     n⃗s = [iseven(i) ? 1 : 2 for i in 1:n_interfaces]
     D⃗s = ones(n_propagations)
-    k₀s = range(0, 3, 10)
+    k₀s = range(0, 3, 1000)
 
     𝚃s = [𝚃(n⃗s, D⃗s, k₀) for k₀ in k₀s]
     𝚁s = [𝚁(n⃗s, D⃗s, k₀) for k₀ in k₀s]
     E_lost = 1 .- 𝚃s .- 𝚁s
 
     fig, ax, plt = scatterlines(k₀s, 𝚃s, label="𝚃")
-    scatterlines!(k₀s, 𝚁s, label="𝚁")
-    scatterlines!(k₀s, E_lost, label=L"E_{lost}")
+    # scatterlines!(k₀s, 𝚁s, label="𝚁")
+    # scatterlines!(k₀s, E_lost, label=L"E_{lost}")
     Legend(fig[1, 2], ax)
     ax.xlabel = "k₀"
     ax.ylabel = "Value"
-    fig |> display
+    fig #|> display
+    𝚃s|>display
 end
 
 
