@@ -6,7 +6,26 @@
 
 
 
+function propagationM(n,D,k)
+    P=[exp(im*n*D*k) 0;
+       0 exp(im*n*D*k)]
+    return P
+end
 
+function interfaceM(nᵢ₋₁,nᵢ)
+    nr=nᵢ/nᵢ₋₁
+    I=1/2*[1+nr   1-nr;
+           1-nr   1+nr]
+    return I
+end
+
+
+#@show(propagationM(1.5,1,1))
+#@show(interfaceM(1,2))
+
+
+
+##
 
 using Plots
 plotly()
