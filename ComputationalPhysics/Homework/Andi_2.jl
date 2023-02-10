@@ -212,8 +212,14 @@ RT_Cal_Plot3(n,D)
 # whereas the result for especially T and loss is less trustworthy.
 # All-inall: There is numerical errors in the results.
 
+## 
 
-
+n1=1
+n2=2
+n=transpose([1 n2 n1 n2 n1 2+15*im n1 n2 n1 n2 1])
+D=transpose([1 1 1 1 1 1 1 1 1])
+RT_Cal_Plot3(n,D)
+# All-inall: There is numerical errors in the results.
 
 
 
