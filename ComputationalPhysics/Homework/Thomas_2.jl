@@ -1,11 +1,13 @@
-using GLMakie; Makie.inline!(true) #This is for plotting. 'true' argument denotes inline plots in vscode
+#using GLMakie; Makie.inline!(true) #This is for plotting. 'true' argument denotes inline plots in vscode
 using LinearAlgebra #For Linear Algebra math
+using Plots
+plotly()
 
 ##---------------A--------------##
 
 #Construct a function handle that returns P matrix
 
-#n: refrace index
+#n: refrace i
 #D: thickness of layer
 #k: vacuum wave number
 
@@ -18,13 +20,13 @@ end
 
 ##--------------B---------------##
 
-#nᵢ: refractive index to the *right* of the interface
-#nᵢ₋₁: refractive index to the *left* of the interface
+#nᵢ: refractive i to the *right* of the interface
+#nᵢ₋₁: refractive i to the *left* of the interface
 
 
 function I_matrix(nᵢ,nᵢ₋₁)
-    I = [   1+nᵢ/nᵢ₋₁ 1-nᵢ/nᵢ₋₁;
-            1-nᵢ/nᵢ₋₁ 1+nᵢ/nᵢ₋₁]
+    I = 0.5 * [     1+nᵢ/nᵢ₋₁ 1-nᵢ/nᵢ₋₁;
+                    1-nᵢ/nᵢ₋₁ 1+nᵢ/nᵢ₋₁]
     return I
 end
 
@@ -37,7 +39,7 @@ end
 
 # ~~--!!n_vect = D_vect + 2 must hold!!--~~
 
-function T(n_vect,D_vect,k)
+function T_matrix(n_vect,D_vect,k)
     T = LinearAlgebra.I
     for i in 1:length(n_vect)-1
         
@@ -56,8 +58,81 @@ end
 
 #Test T function
 
-n_vect = [1 1 1 1]
-D_vect = [1 1]
+n_vect = [1 50 20 4 1]
+D_vect = [1 1 1]
 k = 1
+t_mat = T_matrix(n_vect,D_vect,k)
+println("test")
+@show t_mat
 
-T(n_vect,D_vect,k)
+##-----------------D----------------##
+
+
+
+#Reflectance function
+
+function Reflectance(Mat)
+    R = abs2(Mat[2,1]/Mat[2,2])
+    return R
+end
+
+#Transmittance function
+
+function Transmittance(Mat)
+    T = abs2(Mat[1,1] - (Mat[1,2]*Mat[2,1])/Mat[2,2])
+    return T
+end
+
+
+#Define plotting function
+function superPlot(n_vect,D_vect,N)
+
+    reflectance_vect =      Array{Float64}(undef, N)
+    transmittance_vect =    Array{Float64}(undef, N)
+    loss_vect =             Array{Float64}(undef, N)
+    k_range =               LinRange(0,3,N)
+
+    for i in 1:N
+        transfer_matrix = T_matrix(n_vect,D_vect,k_range[i])
+        reflectance_vect[i] = Reflectance(transfer_matrix)
+        transmittance_vect[i] = Transmittance(transfer_matrix)
+        loss_vect[i] = 1 - transmittance_vect[i] - reflectance_vect[i]
+    end
+
+    plot1 = Plots.plot(k_range,transmittance_vect, labels = "Transmittance")
+    Plots.plot!(k_range,reflectance_vect,labels = "Reflectance")
+    Plots.plot!(title = "R & T")
+    Plots.plot!(legend=:right)
+    display(plot1)
+
+    plot2 = Plots.plot(k_range,loss_vect, labels = "Error (lost energy)")
+    Plots.plot!(title = "Error for each k, ideally zero")
+    Plots.plot!(legend=:right)
+    display(plot2)
+end
+
+
+
+#5 pairs
+n2 = 2
+n1 = 1
+
+n_vect = [1 n2 n1 n2 n1 5 n1 n2 n1 n2 1]
+D_vect = [1 1 1 1 1 1 1 1 1]
+
+superPlot(n_vect,D_vect,1000)
+
+#19 pairs
+
+n_vect = [1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1 ]
+D_vect = ones(length(n_vect)-2)
+
+#superPlot(n_vect,D_vect,1000)
+
+#39 pairs
+
+n_vect = [1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1 ]
+D_vect = ones(length(n_vect)-2)
+
+#superPlot(n_vect,D_vect,1000)
+
