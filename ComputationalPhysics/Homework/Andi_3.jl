@@ -1,6 +1,7 @@
 using LinearAlgebra # Just to get identity matrix
 using Plots
 plotly() # Interactive plots
+# gr()
 
 # using Symbolics
 # @variables y;
@@ -55,17 +56,14 @@ function anal_harm_osc(γ,x₀,t)
     return anal
 end 
 
-function error_vs_time(residual,h,N)
-    E=√(sum(h.*(residual[1:N]).^2))
-    return E
-end
 
 
-function plot_harm_osc(xtable,anal,t)
+
+function plot_harm_osc(xtable2,anal,t)
     # Just plotting data and analytical result
-    plot(t,xtable[1,:], labels="Position")
+    plot(t,xtable2[1,:], labels="Position")
     plot!(t,real.(anal),labels="Analytic position")
-    plot!(t,xtable[2,:], labels="Velocity")
+    plot!(t,xtable2[2,:], labels="Velocity")
     plot!(title = "Damped Harmonic Oscillator")
     # plot!(legend=:topright)
     xlabel!("t [s]")
@@ -73,9 +71,12 @@ function plot_harm_osc(xtable,anal,t)
     display(harm_osc)
 
     # Residual and error calculations
-    residual=xtable[1,:]-real.(anal)
+    residual=xtable2[1,:]-real.(anal)
 
-
+    function error_vs_time(residual,h,N)
+        err_N=√(sum(h.*(residual[1:N]).^2))
+        return err_N
+    end
 
     E=zeros(size(t,1))
     h=step(t)
@@ -90,9 +91,36 @@ function plot_harm_osc(xtable,anal,t)
     plot!(title = "Error vs. time")
     Plots.plot!(legend=:right)
     xlabel!("t [s]")
-    error_plot=ylabel!("Error [ ]")
+    error_plot1=ylabel!("Error [ ]")
+    # display(error_plot)
+
+
+    plot(t,E, labels="Error", yaxis=:log)
+    # plot!(xticks=(1:10, 1:10), grid=true)
+    plot!(title = "Error vs. time")
+    Plots.plot!(legend=:right)
+    xlabel!("t [s]")
+    error_plot2=ylabel!("Error [ ]")
+    # display(error_plot)
+
+
+    plot(t,E, labels="Error", xaxis=:log, yaxis=:log)
+    # plot!(xticks=(1:10, 1:10), grid=true)
+    plot!(title = "Error vs. time")
+    Plots.plot!(legend=:right)
+    xlabel!("t [s]")
+    error_plot3=ylabel!("Error [ ]")
+
+    error_plot=plot(error_plot1, error_plot2, error_plot3, layout = (3,1))
     display(error_plot)
 
+end
+
+function harm_osc_prob(t₀,t₁,N,γ1,x₀)
+    t=range(t₀,t₁,N)
+    A=-1*[0 -1;
+        1 γ1]
+    return (A, x₀, t)
 end
 
 ##
@@ -103,10 +131,11 @@ t₀=0
 t=range(t₀,t₁,N)
 # h=step(t)
 
-γ=0.15
+γ=0.1
 A=-1*[0 -1;
       1 γ]
 x₀=[1;0]
+
 
 xtable=euler(A,x₀,t)
 anal=anal_harm_osc(γ,x₀,t)
@@ -115,5 +144,31 @@ plot_harm_osc(xtable,anal,t)
 
 
 ##
+
+# Test of total method for task 1
+t₀=0
+t₁=100
+N=500
+γ=0.8
+x₀=[1;0]
+problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
+@show problem1
+euler(problem1)
+anal=anal_harm_osc(γ,x₀,t)
+plot_harm_osc(xtable,anal,t)
+
+
+##
+
+# Loop over all the required parameters and plot it.
+
+for Δt in [1, 0.1, 0.001, 0.0001]
+    t₀=0; t₁=100; γ=0.7; x₀=[1;0]
+    N=round(Int, (t₁-t₀)/Δt)
+    problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
+    euler(problem1)
+    anal=anal_harm_osc(γ,x₀,t)
+    plot_harm_osc(xtable,anal,t)
+end
 
 
