@@ -24,8 +24,8 @@ function transfer_matrix(n⃗, D⃗, k₀)
     (length(n⃗) == length(D⃗)+2)  ||  throw(DimensionMismatch("Expected `x+2` refractive indices for `x` distances.\nGot $(length(n⃗)) refractive indices and $(length(D⃗)) distances."))
     tm = I(n⃗[1], n⃗[2])
     for i in eachindex(D⃗)
-        tm = P(n⃗[i+1], D⃗[i], k₀) * tm  # propagation
-        tm = I(n⃗[i+1], n⃗[i+2])   * tm    # interface
+        tm = P(n⃗[i+1], D⃗[i], k₀) * tm   # propagation
+        tm = I(n⃗[i+1], n⃗[i+2])   * tm   # interface
     end
     tm
 end
@@ -44,26 +44,26 @@ end
 
 ##¤ d) part 1
 with_theme(resolution=(1920÷2, 1080÷2.2)) do
-    for n_interfaces in (11, 21, 41)
+    for n_interfaces in 61#(11, 21, 41)
         n_propagations = n_interfaces-2               # Just being very explicit for myself
         n⃗s = [iseven(i) ? 1 : 2 for i in 1:n_interfaces]
         D⃗s = ones(n_propagations)
-        k₀s = range(0, 3, 1000)
+        k₀s = range(0, π, 1000)
 
-        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
-        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s]
+        transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s] .+ 1e-30
+        reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s] .+ 1e-30
         E_lost = 1 .- transmittances .- reflectances
 
         fig, ax, plt = lines(k₀s, transmittances, label="Transmittance")
         lines!(k₀s, reflectances, label="Reflectance")
         axislegend(position=(1, 0.5))
-        lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
-        axislegend(position=(1, 0))
+        ax.yscale=log10
         ax.xlabel = "k₀"
         ax.ylabel = "Value"
         ax.title = "$n_interfaces interfaces and $n_propagations propagations"
+        lines(fig[2, 1], k₀s, E_lost, label=L"E_{lost}")
+        axislegend(position=(1, 0))
         fig |> display
-        # transmittances|>display
     end
 end
 
@@ -106,8 +106,8 @@ with_theme(resolution=(1920÷2, 1080÷2.2)) do
         n⃗s = Any[iseven(i) ? 1 : 2 for i in 1:n_interfaces]
         n⃗s[end÷2] = n_central
         D⃗s = ones(Int64, n_propagations)
-        k₀s = range(0, 3, 1000)
-        offset = 1e-30
+        k₀s = range(0, 3, 1000) .|> big
+        offset = 0#1e-20
         transmittances = [transmittance(n⃗s, D⃗s, k₀) for k₀ in k₀s] .+ offset
         reflectances = [reflectance(n⃗s, D⃗s, k₀) for k₀ in k₀s] .+ offset
         E_lost = 1 .- transmittances .- reflectances
