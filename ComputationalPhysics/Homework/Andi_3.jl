@@ -1,7 +1,7 @@
 using LinearAlgebra # Just to get identity matrix
 using Plots
-plotly() # Interactive plots
-# gr()
+# plotly() # Interactive plots
+gr()
 
 # using Symbolics
 # @variables y;
@@ -125,50 +125,52 @@ end
 
 ##
 
-N=500
-t₁=100
-t₀=0
-t=range(t₀,t₁,N)
-# h=step(t)
+let
+    N=500
+    t₁=100
+    t₀=0
+    t=range(t₀,t₁,N)
+    # h=step(t)
 
-γ=0.1
-A=-1*[0 -1;
-      1 γ]
-x₀=[1;0]
+    γ=0.6
+    A=-1*[0 -1;
+        1 γ]
+    x₀=[1;0]
 
 
-xtable=euler(A,x₀,t)
-anal=anal_harm_osc(γ,x₀,t)
-plot_harm_osc(xtable,anal,t)
-
+    xtable=euler(A,x₀,t)
+    anal=anal_harm_osc(γ,x₀,t)
+    plot_harm_osc(xtable,anal,t)
+end
 
 
 ##
 
 # Test of total method for task 1
-t₀=0
-t₁=100
-N=500
-γ=0.8
-x₀=[1;0]
-problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
-@show problem1
-euler(problem1)
-anal=anal_harm_osc(γ,x₀,t)
-plot_harm_osc(xtable,anal,t)
-
+let
+    t₀=0
+    t₁=100
+    N=500
+    γ=0.8
+    x₀=[1;0]
+    problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
+    @show problem1
+    xtable=euler(problem1)
+    anal=anal_harm_osc(γ,x₀,problem1[3])
+    plot_harm_osc(xtable,anal,problem1[3])
+end
 
 ##
 
 # Loop over all the required parameters and plot it.
 
-for Δt in [1, 0.1, 0.001, 0.0001]
-    t₀=0; t₁=100; γ=0.7; x₀=[1;0]
-    N=round(Int, (t₁-t₀)/Δt)
-    problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
-    euler(problem1)
-    anal=anal_harm_osc(γ,x₀,t)
-    plot_harm_osc(xtable,anal,t)
-end
+# for Δt in [1, 0.1, 0.001, 0.0001]
+#     t₀=0; t₁=100; γ=0.7; x₀=[1;0]
+#     N=round(Int, (t₁-t₀)/Δt)
+#     problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
+#     xtable=euler(problem1)
+#     anal=anal_harm_osc(γ,x₀,problem1[3])
+#     plot_harm_osc(xtable,anal,problem1[3])
+# end
 
 
