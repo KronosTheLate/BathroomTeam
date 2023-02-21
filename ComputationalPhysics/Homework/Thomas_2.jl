@@ -85,7 +85,7 @@ end
 
 
 #Define plotting function
-function superPlot(n_vect,D_vect,N)
+function superPlot(n_vect,D_vect,N,bool)
 
     reflectance_vect =      Array{Float64}(undef, N)
     transmittance_vect =    Array{Float64}(undef, N)
@@ -103,11 +103,17 @@ function superPlot(n_vect,D_vect,N)
     Plots.plot!(k_range,reflectance_vect,labels = "Reflectance")
     Plots.plot!(title = "R & T")
     Plots.plot!(legend=:right)
+    if bool == true
+        Plots.plot!(yaxis=:log)
+    end
     display(plot1)
 
     plot2 = Plots.plot(k_range,loss_vect, labels = "Error (lost energy)")
     Plots.plot!(title = "Error for each k, ideally zero")
     Plots.plot!(legend=:right)
+    if bool == true
+        Plots.plot!(yaxis=:log)
+    end
     display(plot2)
 end
 
@@ -117,22 +123,43 @@ end
 n2 = 2
 n1 = 1
 
-n_vect = [1 n2 n1 n2 n1 5 n1 n2 n1 n2 1]
+n_vect = [1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1]
 D_vect = [1 1 1 1 1 1 1 1 1]
 
-superPlot(n_vect,D_vect,1000)
+#superPlot(n_vect,D_vect,1000,false)
 
 #19 pairs
 
 n_vect = [1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1 ]
 D_vect = ones(length(n_vect)-2)
 
-#superPlot(n_vect,D_vect,1000)
+#superPlot(n_vect,D_vect,1000,false)
 
 #39 pairs
 
 n_vect = [1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 n1 n2 1 ]
 D_vect = ones(length(n_vect)-2)
 
-#superPlot(n_vect,D_vect,1000)
+#superPlot(n_vect,D_vect,1000,false)
+
+#----------E--------------#
+
+#trying n = 2 + 5i
+n_vect = [1 n2 n1 n2 n1 (2+5*im) n1 n2 n1 n2 1]
+D_vect = [1 1 1 1 1 1 1 1 1]
+
+superPlot(n_vect,D_vect,1000,false)
+
+#trying n = 2 + 10i
+n_vect = [1 n2 n1 n2 n1 (2+10*im) n1 n2 n1 n2 1]
+D_vect = [1 1 1 1 1 1 1 1 1]
+
+superPlot(n_vect,D_vect,1000,false)
+
+#trying n = 2 + 15i
+n_vect = [1 n2 n1 n2 n1 (2+15*im) n1 n2 n1 n2 1]
+D_vect = [1 1 1 1 1 1 1 1 1]
+
+superPlot(n_vect,D_vect,1000,true)
+
 
