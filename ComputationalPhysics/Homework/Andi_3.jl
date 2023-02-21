@@ -34,7 +34,7 @@ function euler(A,x₀,t)
 end
 euler(args)=euler(args...)
 
-##
+
 
 function anal_harm_osc(γ,x₀,t)
     # Analytic solution
@@ -177,6 +177,90 @@ end
 
 
 
+## Task 2, making more general Euler method
+
+# More general Euler method
+function euler(f,x₀,t)
+    x=x₀
+    h=step(t)
+    xtot=zeros(size(x,1),size(t,1))
+    xtot[:,1]=x
+    for i in 2:size(t,1)
+        dx=f(x)
+        x+=dx*h
+        xtot[:,i]=x
+    end
+    
+    return xtot
+end
+euler(args)=euler(args...)
+
+function plot_orbit(xtable2,t)
+    # Just plotting data and analytical result
+    plot(t,xtable2[1,:], labels="x")
+    plot!(t,xtable2[2,:], labels="y")
+    plot!(t,xtable2[3,:], labels="px")
+    plot!(t,xtable2[4,:], labels="py")
+    py0=xtable2[4,1]
+    plot!(title = "Orbiting object variables, py_0=$py0")
+    # plot!(legend=:topright)
+    xlabel!("t [s]")
+    orbit_plot=ylabel!("Normalized distance or momentum [ ]")
+    display(orbit_plot)
+
+end
+
+# struct matrix_prob{T<:Real}
+#     A::T
+#     matrix_prob(x)=A*x
+# end
+
+t₀=0
+t₁=100
+N=1000
+t=range(t₀,t₁,N)
+γ=0.6
+x₀=[1;0]
+problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
+Amult(xval) = -1*[0 -1;1 γ] * xval # Credit to Dennis for nice and easy way. No need for functors
+# dho=matrix_prob
+# dho.A=problem1[1]
+xtable=euler(Amult,x₀,t)
+anal=anal_harm_osc(γ,x₀,t)
+plot_harm_osc(xtable,anal,t,γ)
+
+
+## Task 2. Kepler
+
+
+
+function d_dt_kepler(rp)
+    #rp of format rp=[x,y,p_x,p_y], and similar for drp
+    drp=[0.0; 0.0; 0.0; 0.0] #initialize to index
+    drp[1]=rp[3]
+    drp[2]=rp[4]
+    drp[3]=-1/norm(rp[1:2])^3*rp[1]
+    drp[4]=-1/norm(rp[1:2])^3*rp[2]
+    return drp
+end
+
+# a=d_dt_kepler([1; 0; 0;1])
+# display(a)
+
+
+
+t₀=0
+t₁=100
+N=10000
+t=range(t₀,t₁,N)
+x=1
+y=0
+px=0
+py=1
+x₀=[x; y; px; py]
+
+xtable=euler(d_dt_kepler,x₀,t)
+plot_orbit(xtable,t)
 
 
 
