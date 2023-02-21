@@ -153,10 +153,13 @@ with_theme(resolution = (1920÷2, 1080÷2) ,markersize=5) do
     #? Problem definition
     ∇(u⃗) = [0 1; -1/norm(u⃗)^3 0]*u⃗
     t0 = 0
-    t1 = 50
-    N = 2000
-    p⃗₀ = 0.5
-    prob = (∇, t0, t1, N, [[1.0, 0.0], [0, p⃗₀]])
+    t1 = 10
+    N = 10^5
+
+    r⃗₀ = [1.0, 0.0]
+    p₀_y = 0.6
+    p⃗₀ = [0, p₀_y]
+    prob = (∇, t0, t1, N, [r⃗₀, p⃗₀])
 
     us, timesteps = integrate_euler(prob)
     h = step(timesteps)
@@ -171,10 +174,11 @@ with_theme(resolution = (1920÷2, 1080÷2) ,markersize=5) do
     #? Plotting
     begin  # Plotting components
         fig = Figure()
-        ax1 = Axis(fig[1, 1], xlabel="Timestep", ylabel="X component")
+        ax1 = Axis(fig[1, 1], title="r⃗₀ = $r⃗₀\np⃗₀ = $p⃗₀\nN = $N", xlabel="Timepoint", ylabel="X component",)
         scatterlines!(timesteps, r_xs, label=L"\vec{r}_x", color = Cycled(1)) # , marker='→'
         scatterlines!(timesteps, p_xs, label=L"\vec{p}_x", color = Cycled(2)) # , marker='→'
         ax2 = Axis(fig[2, 1], ylabel="Y component")
+        hidexdecorations!(ax2, grid=false)
         scatterlines!(timesteps, r_ys, label=L"\vec{r}_y", color = Cycled(1)) # , marker='↑'
         scatterlines!(timesteps, p_ys, label=L"\vec{p}_y", color = Cycled(2)) # , marker='↑'
         linkxaxes!(ax1, ax2)
