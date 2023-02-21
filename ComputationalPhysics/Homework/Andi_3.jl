@@ -59,12 +59,12 @@ end
 
 
 
-function plot_harm_osc(xtable2,anal,t)
+function plot_harm_osc(xtable2,anal,t,γ)
     # Just plotting data and analytical result
     plot(t,xtable2[1,:], labels="Position")
     plot!(t,real.(anal),labels="Analytic position")
     plot!(t,xtable2[2,:], labels="Velocity")
-    plot!(title = "Damped Harmonic Oscillator") #, γ= " γ
+    plot!(title = "Damped Harmonic Oscillator, γ=$γ")
     # plot!(legend=:topright)
     xlabel!("t [s]")
     harm_osc=ylabel!("Amplitude [m, m/s]")
@@ -86,27 +86,27 @@ function plot_harm_osc(xtable2,anal,t)
     end
     # display(E)
 
-    # Plot error
-    plot(t,E, labels="Error")
-    plot!(title = "Error vs. time")
+    # Plot error. NOTE +1E-16, to get ticks on plot
+    plot(t.+1E-16,E.+1E-16, labels="Error")
+    plot!(title = "Error vs. time, γ=$γ")
     Plots.plot!(legend=:right)
     xlabel!("t [s]")
     error_plot1=ylabel!("Error [ ]")
     # display(error_plot)
 
 
-    plot(t,E, labels="Error", yaxis=:log)
+    plot(t.+1E-16,E.+1E-16, labels="Error", yaxis=:log)
     # plot!(xticks=(1:10, 1:10), grid=true)
-    plot!(title = "Error vs. time")
+    plot!(title = "Error vs. time, γ=$γ")
     Plots.plot!(legend=:right)
     xlabel!("t [s]")
     error_plot2=ylabel!("Error [ ]")
     # display(error_plot)
 
 
-    plot(t,E, labels="Error", xaxis=:log, yaxis=:log)
+    plot(t.+1E-16,E.+1E-16, labels="Error", xaxis=:log, yaxis=:log)
     # plot!(xticks=(1:10, 1:10), grid=true)
-    plot!(title = "Error vs. time")
+    plot!(title = "Error vs. time, γ=$γ")
     Plots.plot!(legend=:right)
     xlabel!("t [s]")
     error_plot3=ylabel!("Error [ ]")
@@ -116,17 +116,17 @@ function plot_harm_osc(xtable2,anal,t)
 
 end
 
-function harm_osc_prob(t₀,t₁,N,γ1,x₀)
+function harm_osc_prob(t₀,t₁,N,γ,x₀)
     t=range(t₀,t₁,N)
     A=-1*[0 -1;
-        1 γ1]
+        1 γ]
     return (A, x₀, t)
 end
 
 ##
 
 let
-    N=500
+    N=1000
     t₁=100
     t₀=0
     t=range(t₀,t₁,N)
@@ -140,7 +140,7 @@ let
 
     xtable=euler(A,x₀,t)
     anal=anal_harm_osc(γ,x₀,t)
-    plot_harm_osc(xtable,anal,t)
+    plot_harm_osc(xtable,anal,t,γ)
 end
 
 
@@ -164,13 +164,21 @@ end
 
 # Loop over all the required parameters and plot it.
 
-for Δt in [1, 0.1, 0.01, 0.001]
-    t₀=0; t₁=100; γ=0.7; x₀=[1;0]
-    N=round(Int, (t₁-t₀)/Δt)
-    problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
-    xtable=euler(problem1)
-    anal=anal_harm_osc(γ,x₀,problem1[3])
-    plot_harm_osc(xtable,anal,problem1[3])
+for γ in [0, 0.4, 2, 3]
+    for Δt in [1, 0.1, 0.01, 0.001]
+        t₀=0; t₁=100; x₀=[1;0]
+        N=round(Int, (t₁-t₀)/Δt)
+        problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
+        xtable=euler(problem1)
+        anal=anal_harm_osc(γ,x₀,problem1[3])
+        plot_harm_osc(xtable,anal,problem1[3],γ)
+    end
 end
+
+
+
+
+
+
 
 
