@@ -1,5 +1,5 @@
 using GLMakie; Makie.inline!(true)
-function integrate(t₀, t₁, steps, state_to_rateofchange_matrix, u⃗₀)
+function integrate(state_to_rateofchange_matrix, t₀, t₁, steps, u⃗₀)
     timesteps = range(t₀, t₁, steps)
     h = step(timesteps)
     u⃗s = fill(69.0, length(u⃗₀), length(timesteps))  # For outputting
@@ -24,7 +24,7 @@ if γ == 2
 end
 A = [0 1; -1 -γ]
 
-prob1 = (t0, t1, N, A, [1, 0])
+prob1 = (A, t0, t1, N, [1, 0])
 
 # function euler(prob)
 let prob = prob1
@@ -67,7 +67,7 @@ function task_2d(γ, timestep)
     end
     A = [0 1; -1 -γ]
 
-    prob = (t0, t1, N, A, [1, 0])
+    prob = (A, t0, t1, N, [1, 0])
     us, timesteps, h = integrate(prob)
     positions = us[1, :]
     α = prob[end][1]
@@ -87,17 +87,37 @@ end
 let
 counter = 0
 for γ in (0.5, 1, 2, 4) # Un, under, critical, over
-    for timestep in (1, 1e-1, 1e-2, 1e-3)
+    for timestep in (1, 1e-1, 1e-2, 1e-3)[1:2]
         counter += 1
         timesteps, pos_est, pos_ana, resids, errors = task_2d(γ, timestep)
-        fig, ax, plt = lines(timesteps, pos_est, label="Estimated position")
-        ax.title = "γ = $γ, h = $timestep"
-        lines!(timesteps, pos_ana, label="Analytical position")
-        lines!(timesteps, resids, label="Residuals")
-        lines!(timesteps, errors, label="Errors")
-        axislegend()
-        fig |> display
+        let #! Linear-scale plots
+            fig, ax, plt = lines(timesteps, pos_est, label="Estimated position")
+            ax.title = "γ = $γ, h = $timestep"
+            lines!(timesteps, pos_ana, label="Analytical position")
+            lines!(timesteps, resids, label="Residuals")
+            lines!(timesteps, errors, label="Error up to timestep")
+            # axislegend()
+            Legend(fig[1, 2], ax)
+            fig |> display
+        end
+        let #! Log-scale plots
+            thresh_y = 1e-20
+            increase_floor(v::AbstractVector, thresh=thresh_y) = replace(x->abs(x) ≥ thresh ? x : thresh, v) 
+            thresh_timesteps = 1e-1
+            timesteps = increase_floor(timesteps, thresh_timesteps)
+            fig, ax, plt = lines(timesteps, abs.(pos_est) |> increase_floor, label="Estimated position")
+            ax.title = "γ = $γ, h = $timestep\nthresh_y = $thresh_y, thresh_x = $thresh_timesteps"
+            lines!(timesteps, increase_floor(abs.(pos_ana)) , label="Analytical position")
+            lines!(timesteps, increase_floor(abs.(resids))  , label="Residuals")
+            lines!(timesteps, increase_floor(abs.(errors))  , label="Error up to timestep")
+            Legend(fig[1, 2], ax)
+            ax.yscale = log10
+            fig |> display
+            ax.xscale = log10
+            fig |> display
+        end
         @info "Finnished with $counter/16 plots"
     end
 end
 end
+
