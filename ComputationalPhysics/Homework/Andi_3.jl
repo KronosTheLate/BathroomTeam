@@ -1,7 +1,7 @@
 using LinearAlgebra # Just to get identity matrix
 using Plots
-# plotly() # Interactive plots
-gr()
+plotly() # Interactive plots
+# gr()
 
 # using Symbolics
 # @variables y;
@@ -64,7 +64,7 @@ function plot_harm_osc(xtable2,anal,t)
     plot(t,xtable2[1,:], labels="Position")
     plot!(t,real.(anal),labels="Analytic position")
     plot!(t,xtable2[2,:], labels="Velocity")
-    plot!(title = "Damped Harmonic Oscillator")
+    plot!(title = "Damped Harmonic Oscillator") #, γ= " γ
     # plot!(legend=:topright)
     xlabel!("t [s]")
     harm_osc=ylabel!("Amplitude [m, m/s]")
@@ -151,7 +151,7 @@ let
     t₀=0
     t₁=100
     N=500
-    γ=0.8
+    γ=0.6
     x₀=[1;0]
     problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
     @show problem1
@@ -164,13 +164,13 @@ end
 
 # Loop over all the required parameters and plot it.
 
-# for Δt in [1, 0.1, 0.001, 0.0001]
-#     t₀=0; t₁=100; γ=0.7; x₀=[1;0]
-#     N=round(Int, (t₁-t₀)/Δt)
-#     problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
-#     xtable=euler(problem1)
-#     anal=anal_harm_osc(γ,x₀,problem1[3])
-#     plot_harm_osc(xtable,anal,problem1[3])
-# end
+for Δt in [1, 0.1, 0.01, 0.001]
+    t₀=0; t₁=100; γ=0.7; x₀=[1;0]
+    N=round(Int, (t₁-t₀)/Δt)
+    problem1=harm_osc_prob(t₀,t₁,N,γ,x₀)
+    xtable=euler(problem1)
+    anal=anal_harm_osc(γ,x₀,problem1[3])
+    plot_harm_osc(xtable,anal,problem1[3])
+end
 
 
