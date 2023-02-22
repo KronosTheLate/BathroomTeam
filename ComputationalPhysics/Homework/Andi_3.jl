@@ -41,6 +41,9 @@ function anal_harm_osc(γ,x₀,t)
     if γ==2 # Workaround to avoid problem at critical damped case. Think it is due to very different to linearly independent solutions.
         γ+=2*eps()
     end
+    # Better to γ-2<1E-7, and 2*eps() is too low number
+    # Better to implement analytic solution for critically damped case.
+    # It is poorly conditioned around γ=2.
 
     α=x₀[1]
     β=x₀[2]
@@ -291,13 +294,13 @@ end
 
 # Solving a kepler problem with euler method
 t₀=0
-t₁=60
-N=1000
+t₁=2*pi*13^(3/2)
+N=10000
 t=range(t₀,t₁,N)
-x=1
+x=13
 y=0
 px=0
-py=1
+py=1/sqrt(x)
 x₀=[x; y; px; py]
 xtable=euler(d_dt_kepler,x₀,t)
 # plot_orbit(xtable,t)
