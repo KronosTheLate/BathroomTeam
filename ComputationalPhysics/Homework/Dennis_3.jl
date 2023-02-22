@@ -28,17 +28,16 @@ function integrate_euler(∇::Function, t₀, t₁, steps, u⃗₀)
     end
     return (us = u⃗s, timesteps=timesteps)
 end
-integrate_euler(args) = integrate_euler(args...)
-
+integrate_euler(args) = integrate_euler(args...) 
 
 let #? Task 1, plotting single case
     begin
         t0 = 0
-        t1 = 10
-        N = 500
-        γ = 0.15
+        t1 = 50
+        N = 100
+        γ = 6
         if γ == 2
-            γ += 2eps()  # Workaround
+            γ += 2eps()  #! Dirty, dirty lie
         end
         A(u⃗) = [0.0 1; -1 -γ] * u⃗
         prob = (A, t0, t1, N, [1.0, 0])
@@ -145,6 +144,25 @@ with_theme(markersize=5, resolution=(1920÷1.75, 1080÷1.5)) do
     end
 end
 
+let #! Very manual determening of convergence order
+    γ = 2#0.15
+    timesteps = [1.1 .^ n for n in -45:20]
+    errors = similar(timesteps)
+    for (i, timestep) in enumerate(timesteps)
+        sol = task_1d(γ, timestep)
+        errors[i] = sol.errors[end]
+    end
+    fig, ax, _ = scatterlines(timesteps, errors)
+    ax.xscale=log10
+    ax.yscale=log10
+    ax.xlabel = "Stepsize"
+    ax.ylabel = "Error"
+
+    # lines!(timesteps[begin:begin+10], x->10x^1, color=Cycled(2))
+    lines!(timesteps[begin:end÷2], x->0.5x^1, color=Cycled(2))
+    fig|>display
+end
+
 ##¤ Task 2
 # state_to_rateofchange_matrix goes from const to function of state
 # The function is renamed to `∇`, and is applied to the current state
@@ -153,11 +171,11 @@ with_theme(resolution = (1920÷2, 1080÷2) ,markersize=5) do
     #? Problem definition
     ∇(u⃗) = [0 1; -1/norm(u⃗)^3 0]*u⃗
     t0 = 0
-    t1 = 10
-    N = 10^5
+    t1 = 2π
+    N = 10^4
 
     r⃗₀ = [1.0, 0.0]
-    p₀_y = 0.6
+    p₀_y = 0.0
     p⃗₀ = [0, p₀_y]
     prob = (∇, t0, t1, N, [r⃗₀, p⃗₀])
 
@@ -177,6 +195,11 @@ with_theme(resolution = (1920÷2, 1080÷2) ,markersize=5) do
         ax1 = Axis(fig[1, 1], title="r⃗₀ = $r⃗₀\np⃗₀ = $p⃗₀\nN = $N", xlabel="Timepoint", ylabel="X component",)
         scatterlines!(timesteps, r_xs, label=L"\vec{r}_x", color = Cycled(1)) # , marker='→'
         scatterlines!(timesteps, p_xs, label=L"\vec{p}_x", color = Cycled(2)) # , marker='→'
+        
+        # scatterlines!(timesteps, (r_xs.|>abs) .+ 1e-3, label=L"\vec{r}_x", color = Cycled(1)) # , marker='→'
+        # scatterlines!(timesteps, (p_xs.|>abs) .+ 1e-3, label=L"\vec{p}_x", color = Cycled(2)) # , marker='→'
+        # ax1.yscale = log10
+
         ax2 = Axis(fig[2, 1], ylabel="Y component")
         hidexdecorations!(ax2, grid=false)
         scatterlines!(timesteps, r_ys, label=L"\vec{r}_y", color = Cycled(1)) # , marker='↑'
