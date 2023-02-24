@@ -1,3 +1,4 @@
+using GLMakie; Makie.inline!(true)
 using Images
 w = 800
 h = 600
@@ -18,7 +19,7 @@ let I = I_sin
     I_bmp = I_greyscale./255 # back to 0-1 range for .bmp
 
     pixelvalues = repeat(transpose(I_bmp), h)
-    save("/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 2/GeneratedGratings/sine_lambda=$λ.bmp", pixelvalues)
+    # save("/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 2/GeneratedGratings/sine_lambda=$λ.bmp", pixelvalues)
 end
 
 ##¤ Binary grating
@@ -40,6 +41,23 @@ let I = I_bin
     save("/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 2/GeneratedGratings/bin_pitch=$(pitch)_duty=$duty.bmp", pixelvalues)
 end
 
+##¤ Fresnel zone plane
+r_n(n, λ, f) = √(n*λ*f + 1/4*n^2*λ^2)
+SLM_pixel_pitch = 32e-6
+λ = 633e-9
+λ_in_units_of_pixels = λ/SLM_pixel_pitch
+r_borders = r_n.(0:10, λ_in_units_of_pixels, 100000)
+px = 600
+let
+    output = zeros(px, px)
+    i_center = px÷2
+    for i in axes(output, 1)
+        for j in axes(output, 2)
+            r_from_center = hypot(i-i_center, j-i_center)
+            if iseven(  )
+        end
+    end
+end
 
 
 ##
