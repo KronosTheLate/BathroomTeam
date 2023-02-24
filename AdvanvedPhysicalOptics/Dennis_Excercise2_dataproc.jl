@@ -26,26 +26,31 @@ begin #? Masaging data
 end
 
 let #? Plotting
-    means = mean.(task3_imagemats)
-    medians = median.(task3_imagemats)
-    bla = extrema.(task3_imagemats)
-    mins, maxs = first.(bla)[sorted_inds], last.(bla)
-    stddevs = std.(task3_imagemats)
+    means = mean.(task3_imagemats) .* 255
+    medians = median.(task3_imagemats) .* 255
+    # bla = extrema.(task3_imagemats)
+    # mins, maxs = first.(bla)[sorted_inds], last.(bla)
+    # stddevs = std.(task3_imagemats)
 
     fig = Figure()
-    ax = Axis(fig[1, 1], xlabel="Uniform grayscal value", ylabel="Value")
+    ax = Axis(fig[1, 1], xlabel="Uniform grayscal value", ylabel="Grayscale value")
     
     scatterlines!(task3_uniform_grayscale_vals, means, label="Mean")
     scatterlines!(task3_uniform_grayscale_vals, medians, label="Median")
     # scatterlines!(task3_uniform_grayscale_vals, mins, label="Minium")
     # scatterlines!(task3_uniform_grayscale_vals, maxs, label="Maximum")
-    scatterlines!(task3_uniform_grayscale_vals, stddevs, label="Std dev")
+    # scatterlines!(task3_uniform_grayscale_vals, stddevs, label="Std dev")
     Legend(fig[1, 2], ax)
     
     fig |> display
 end
 
 ##! Task 2 - diffraction pattern of blank SLM screen
+camera_pixel_pitch = 6.784e-3 / 1280
+SLM_pixel_pitch = 32e-6
+λ = 632.8e-9
+f = 100e-3
+dist_to_period(dist) = f*λ/dist
 begin #? Masaging data
     task2_mask = occursin.("task2", image_names)  # Logical mask, used for indexing to get only pictures with "task3" in filename
     task2_image = Gray.(only(images[task2_mask]))
@@ -61,10 +66,16 @@ begin #? Masaging data
     heatmap(task2_imagemat)
     DataInspector()
     current_figure()
-    task2_spotcenters =[[118, 1045] [522, 1064] [NaN, NaN]
-                        [97, 646] [541, 654] [892, 663] 
-                        [134, 259] [531, 254] [NaN, NaN]]  # by manual determination
-
+    task2_spotcenters_h =[[97, 646], [541, 654], [892, 663]]  # by manual determination
+    Δx, Δy = task2_spotcenters_h[3] .- task2_spotcenters_h[1]
+    dist_h = hypot(Δx, Δy)/2 * camera_pixel_pitch
+    task2_spotcenters_v =[[522, 1064], [541, 654], [531, 254]]  # by manual determination
+    Δx, Δy = task2_spotcenters_v[3] .- task2_spotcenters_v[1]
+    dist_v = hypot(Δx, Δy)/2 * camera_pixel_pitch
+    period_h = dist_to_period(dist_h)
+    period_v = dist_to_period(dist_v)
+    true_period = 32e-6
+    period_h, period_v, true_period
 end
 
 
@@ -105,7 +116,7 @@ function exp_from_filename(filename)
     return filename[i_start+1:i_end-1]
 end
 
-let i=14 #? Locating centers
+let i=1 #? Locating centers
     task4_mask = occursin.("task4", image_names)  # Logical mask, used for indexing to get only pictures with "task3" in filename
     task4_images = images[task4_mask] .|> x->Gray.(x)
     task4_imagemats = task4_images  .|> x->gray.(x) .|> x->float.(x)
@@ -173,7 +184,6 @@ task4_imagecenters = [  # manually determined centers
 
 all_centers = getproperty.(task4_imagecenters, :centers)
 
-camera_pixel_pitch = 6.784e-3 / 1280
 distance_to_all_orders_px = [begin 
     centervec_pairs = []
     let centervec = all_centers[i]
@@ -192,6 +202,7 @@ distance_to_all_orders_px = [begin
         output
     end
 end for i in eachindex(all_centers)]
+
 distance_to_all_orders = distance_to_all_orders_px .* camera_pixel_pitch
 
 function distance_order(n)
@@ -202,5 +213,6 @@ function distance_order(n)
     end for distances in distance_to_all_orders]
 end
 
-distance_order1 = distance_order(1)
+distance_order_1 = distance_order(1)
 distance_order(2)
+getproperty.(task4_imagecenters, :image_name)

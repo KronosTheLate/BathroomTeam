@@ -13,8 +13,11 @@ let #! Loading pictures
     images = [image .|> Gray for image in images] # Convert to grayscale
 end
 
-image_names
-
+camera_pixel_pitch = 6.784e-3 / 1280
+SLM_pixel_pitch = 32e-6
+λ = 632.8e-9
+f = 100e-3
+dist_to_period(dist) = f*λ/dist
 
 ##! Task 1 - Linearity of "amplitude response function of SLM"
 task1_mask = occursin.("grating2D_", image_names)
@@ -54,7 +57,7 @@ end
 pit_from_filename.(task1_imagenames)
 rot_from_filename.(task1_imagenames)
 
-let i=10 #? Locating centers. Max i is 10
+let i=5 #? Locating centers. Max i is 10
     @show i
     image_name = task1_imagenames[i]
     @show image_name
@@ -105,7 +108,6 @@ task4_imagecenters = [  # manually determined centers. First point is center, pa
 
 all_centers2 = getproperty.(task4_imagecenters, :centers)
 
-camera_pixel_pitch = 6.784e-3 / 1280
 distance_to_all_orders_px2 = [begin 
     centervec_pairs = []
     let centervec = all_centers2[i]
@@ -125,7 +127,9 @@ distance_to_all_orders_px2 = [begin
         output
     end
 end for i in eachindex(all_centers2)]
+
 distance_to_all_orders2 = distance_to_all_orders_px2 .* camera_pixel_pitch
+
 function distance_order2(n)
     [try
         getindex(distances, n)
@@ -133,5 +137,7 @@ function distance_order2(n)
         NaN
     end for distances in distance_to_all_orders2]
 end
-distance_order2(1)
-distance_order1_2 = getindex.(distance_to_all_orders2, 1)
+getproperty.(task4_imagecenters, :image)
+dist_to_period.(distance_order2(1))
+true_periods = getproperty.(task4_imagecenters, :pit) .* SLM_pixel_pitch
+##? Finding spatial period of source
