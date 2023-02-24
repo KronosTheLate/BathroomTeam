@@ -25,7 +25,7 @@ begin #? Masaging data
     task3_imagemats = task3_images .|> x->gray.(x) .|> float
 end
 
-let #? Plotting
+with_theme(resolution=(1920÷2, 1080÷2), fontsize = 30) do#? Plotting
     means = mean.(task3_imagemats) .* 255
     medians = median.(task3_imagemats) .* 255
     # bla = extrema.(task3_imagemats)
@@ -43,6 +43,7 @@ let #? Plotting
     Legend(fig[1, 2], ax)
     
     fig |> display
+    save("SLM_linrange.png", fig)
 end
 
 ##! Task 2 - diffraction pattern of blank SLM screen
@@ -213,6 +214,5 @@ function distance_order(n)
     end for distances in distance_to_all_orders]
 end
 
-distance_order_1 = distance_order(1)
-distance_order(2)
+distance_order(1)
 getproperty.(task4_imagecenters, :image_name)

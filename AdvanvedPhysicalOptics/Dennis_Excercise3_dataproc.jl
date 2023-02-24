@@ -16,8 +16,8 @@ end
 camera_pixel_pitch = 6.784e-3 / 1280
 SLM_pixel_pitch = 32e-6
 λ = 632.8e-9
-f = 100e-3
-dist_to_period(dist) = f*λ/dist
+f = 300e-3
+dist_to_period2(dist) = f*λ/dist
 
 ##! Task 1 - Linearity of "amplitude response function of SLM"
 task1_mask = occursin.("grating2D_", image_names)
@@ -81,19 +81,8 @@ let i=5 #? Locating centers. Max i is 10
     current_figure()
 end
 
-task4_imagecenters_old = [  # manually determined centers. If rot!=0, points are pairwise opposite, and 0 order is last center
-    (pit = 7, rot = 0, image_name = "grating2D_graymax100_pitch7_rot0", centers = [[392.31, 655.0], [520.9, 653.23], [649.01, 651.1]]),
-    (pit = 11, rot = 0, image_name = "grating2D_graymax255_pitch11_rot0", centers = [[109.17, 658.95], [196.46, 657.66], [275.13, 656.94], [359.22, 655.95], [438.58, 654.52], [520.29, 653.06], [602.5, 652.09], [683.48, 651.4], [766.57, 649.23], [846.39, 647.59], [932.17, 646.91]]),
-    (pit = 11, rot = 30, image_name = "grating2D_graymax255_pitch11_rot30", centers = [[399.55, 821.18], [639.47, 435.52], [336.55, 615.59], [702.07, 642.16], [630.42, 584.68], [407.12, 672.19], [448.47, 572.68], [591.46, 685.52], [518.49, 628.04]]),
-    (pit = 11, rot = 45, image_name = "grating2D_graymax255_pitch11_rot45", centers = [[403.65, 631.39], [635.71, 628.42], [517.61, 519.02], [522.31, 740.61], [464.2, 711.73], [576.79, 547.06], [460.72, 548.9], [580.14, 711.16], [518.82, 629.61]]),
-    (pit = 15, rot = 0, image_name = "grating2D_graymax255_pitch15_rot0", centers = [[159.3, 657.95], [220.01, 658.31], [279.69, 656.68], [341.55, 655.6], [400.94, 654.34], [461.4, 653.42], [521.22, 653.11], [580.74, 652.48], [642.3, 651.68], [701.13, 649.93], [764.27, 649.03], [822.34, 649.15], [883.66, 648.38], [516.62, 422.37], [518.59, 507.86], [521.28, 553.54], [523.96, 736.32], [524.02, 797.4], [524.34, 880.81], [466.17, 736.26], [580.35, 542.44], [577.89, 507.59], [465.83, 735.85], [582.27, 797.28], [456.66, 508.22]]),
-    (pit = 15, rot = 30, image_name = "grating2D_graymax255_pitch15_rot30", centers = [[635.34, 443.0], [402.53, 814.16], [386.13, 620.9], [653.29, 636.97], [601.91, 594.52], [438.49, 660.41], [466.59, 586.14], [572.45, 670.84], [519.24, 628.89]]),
-    (pit = 15, rot = 45, image_name = "grating2D_graymax255_pitch15_rot45", centers = [[434.16, 631.29], [604.94, 628.76], [563.16, 689.14], [476.32, 570.42], [561.04, 568.78], [478.02, 691.6], [518.66, 629.44]]),
-    (pit = 7, rot = 0, image_name = "grating2D_graymax255_pitch7_rot0", centers = [[136.39, 658.77], [264.06, 657.86], [391.96, 655.88], [521.51, 653.53], [649.4, 651.55], [779.26, 650.18], [908.4, 647.56]]),
-    (pit = 7, rot = 30, image_name = "grating2D_graymax255_pitch7_rot30", centers = [[394.86, 836.2], [645.28, 422.06], [470.58, 491.28], [569.04, 766.26], [695.28, 559.32], [344.31, 699.21], [519.09, 628.72]]),
-    (pit = 7, rot = 45, image_name = "grating2D_graymax255_pitch7_rot45", centers = [[154.07, 635.64], [886.02, 624.98], [700.78, 479.55], [339.63, 778.88], [522.23, 777.48], [517.27, 482.1], [334.61, 485.29], [705.62, 774.22], [703.07, 627.08], [337.34, 632.64], [519.33, 631.14]])
-]
-task4_imagecenters = [  # manually determined centers. First point is center, pairwise from there are opposite
+
+task1_imagecenters = [  # manually determined centers. First point is center, pairwise from there are opposite
     (pit = 7, rot = 0, image_name = "grating2D_graymax100_pitch7_rot0", centers = [[520.47, 652.54], [392.06, 655.34], [649.03, 651.24]]),
     (pit = 11, rot = 0, image_name = "grating2D_graymax255_pitch11_rot0", centers = [[520.8, 653.73], [602.75, 652.49], [438.7, 655.03], [359.77, 655.21], [683.87, 650.84], [766.35, 649.82], [275.42, 656.89], [195.81, 656.84], [846.24, 648.28], [932.24, 646.91], [108.91, 659.67]]),
     (pit = 11, rot = 30, image_name = "grating2D_graymax255_pitch11_rot30", centers = [[518.8, 628.54], [448.72, 573.12], [591.1, 685.27], [407.63, 672.31], [629.8, 584.11], [700.99, 640.51], [335.96, 614.77], [399.9, 820.27], [638.9, 434.11]]),
@@ -106,7 +95,7 @@ task4_imagecenters = [  # manually determined centers. First point is center, pa
     (pit = 7, rot = 45, image_name = "grating2D_graymax255_pitch7_rot45", centers = [[519.97, 629.28], [337.99, 633.6], [702.39, 626.2], [517.13, 481.82], [521.5, 775.82], [339.09, 778.6], [700.43, 478.73], [336.24, 483.67], [704.14, 776.13]])
 ]
 
-all_centers2 = getproperty.(task4_imagecenters, :centers)
+all_centers2 = getproperty.(task1_imagecenters, :centers)
 
 distance_to_all_orders_px2 = [begin 
     centervec_pairs = []
@@ -128,8 +117,6 @@ distance_to_all_orders_px2 = [begin
     end
 end for i in eachindex(all_centers2)]
 
-distance_to_all_orders2 = distance_to_all_orders_px2 .* camera_pixel_pitch
-
 function distance_order2(n)
     [try
         getindex(distances, n)
@@ -137,7 +124,15 @@ function distance_order2(n)
         NaN
     end for distances in distance_to_all_orders2]
 end
-getproperty.(task4_imagecenters, :image)
-dist_to_period.(distance_order2(1))
-true_periods = getproperty.(task4_imagecenters, :pit) .* SLM_pixel_pitch
+
+begin
+    estimated_periods_based_on_nearest_peaks = dist_to_period2.(distance_order2(1))
+    true_periods = getproperty.(task1_imagecenters, :pit) .* SLM_pixel_pitch
+    println("filenames")
+    display(getproperty.(task1_imagecenters, :image_name))
+    println("estimated_periods_based_on_nearest_peaks")
+    display(estimated_periods_based_on_nearest_peaks)
+    println("true_periods")
+    display(true_periods)
+end
 ##? Finding spatial period of source
