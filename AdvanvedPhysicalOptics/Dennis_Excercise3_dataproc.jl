@@ -1,29 +1,29 @@
 using GLMakie; GLMakie.activate!(); Makie.inline!(false)
 using Images
 Axis = Makie.Axis  # Images also exports Axis
-imdir = "/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 3/Images 3 lab"  # Assumed "Pictures" is inside pwd, and contains the thorcam pictures.
+imdir2 = "/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 3/Images 3 lab"  # Assumed "Pictures" is inside pwd, and contains the thorcam pictures.
 
 
 let #! Loading pictures
-    images_paths_all = readdir(imdir, join=true)
-    image_paths_bmp = filter(p->occursin(".bmp", p), images_paths_all)
-    global image_names = [splitext(splitpath(image_path)[end])[1] for image_path in image_paths_bmp]
+    images_paths_all2 = readdir(imdir2, join=true)
+    image_paths_bmp2 = filter(p->occursin(".bmp", p), images_paths_all2)
+    global image_names2 = [splitext(splitpath(image_path)[end])[1] for image_path in image_paths_bmp2]
 
-    global images = Images.load.(image_paths_bmp)
-    images = [image .|> Gray for image in images] # Convert to grayscale
+    global images2 = Images.load.(image_paths_bmp2)
+    images2 = [image .|> Gray for image in images2] # Convert to grayscale
 end
 
 camera_pixel_pitch = 6.784e-3 / 1280
 SLM_pixel_pitch = 32e-6
 λ = 632.8e-9
 f = 300e-3
-dist_to_period2(dist) = f*λ/dist
+dist_to_period(dist, f) = f*λ/dist
 
-##! Task 1 - Linearity of "amplitude response function of SLM"
-task1_mask = occursin.("grating2D_", image_names)
-task1_images = images[task1_mask]
+##! Task 1
+task1_mask = occursin.("grating2D_", image_names2)
+task1_images = images2[task1_mask]
 task1_imagemats = task1_images .|> x->Gray.(x) .|> x->gray.(x) .|> x->Float64.(x)
-task1_imagenames = image_names[task1_mask]
+task1_imagenames = image_names2[task1_mask]
 task1_imagenames = replace(task1_imagenames) do name
     if occursin("rot", name)
         return name
@@ -95,6 +95,104 @@ task1_imagecenters = [  # manually determined centers. First point is center, pa
     (pit = 7, rot = 45,  image_name = "grating2D_graymax255_pitch7_rot45",  centers = [[519.97, 629.28], [337.99, 633.6], [702.39, 626.2], [517.13, 481.82], [521.5, 775.82], [339.09, 778.6], [700.43, 478.73], [336.24, 483.67], [704.14, 776.13]])
 ]
 
+begin #! Making processed_centerdf2
+    processed_centerdf2 = DataFrame()
+    processed_centerdf2.centers_rel = map(task1_imagecenters) do nt
+        vec2imag(v) = v[1] + v[2]*im
+        centerloc = copy(nt.centers[1]) |> vec2imag
+        return [vec2imag(center) .- centerloc for center in nt.centers[begin+1:end]]
+    end
+    processed_centerdf2.centerdiffs = map(processed_centerdf2.centers_rel) do center_vector
+        [center_vector[i+1] - center_vector[i] for i in 1:2:length(center_vector)] ./ 2
+    end
+    processed_centerdf2.distances = processed_centerdf2.centerdiffs .|> x->abs.(x)
+    processed_centerdf2.angles = processed_centerdf2.centerdiffs .|> x->rad2deg.(angle.(x))
+    processed_centerdf2 = processed_centerdf2 .|> x->round.(x, digits=3)
+end
+
+processed_centerdf2.centerdiffs
+processed_centerdf2.distances
+processed_centerdf2.angles
+
+let  #! Making processed_data_px2
+    header = [:vec, :mag, :angle, :pit, :rot, :filename]
+    mat = Matrix{Any}(undef, 0, length(header))
+    for i in eachindex(task1_imagecenters)
+        for j in eachindex(processed_centerdf2.centerdiffs[i])
+            datavec = hcat(
+                processed_centerdf2.centerdiffs[i][j],
+                processed_centerdf2.distances[i][j],
+                processed_centerdf2.angles[i][j],
+                tuple(task1_imagecenters[i]...)[1:3]..., 
+            )
+            mat = vcat(mat, datavec)
+        end
+    end
+    global processed_data_px2 = DataFrame(mat, header) .|> identity
+    processed_data_px2.angle = map(processed_data_px2.angle) do ang  # making all angles between ± 90°
+        ang ≤ -90  && return ang+180
+        ang ≥ 90   && return ang-180
+        return ang
+    end
+end
+processed_data_px2 |> vscodedisplay
+
+processed_data_px2_1order = filter(processed_data_px2) do row
+    count(==(row.filename), processed_data_px2.filename) ≤ 1 ? true :
+    row.mag == minimum(filter(x->x.filename==row.filename, processed_data_px2).mag) ? true : false
+end
+processed_data_px2_1order |> vscodedisplay
+
+relative_error(calc_val, true_val) = (calc_val - true_val)/true_val
+let input_df = processed_data_px2
+    calculated_spatial_period_100 = dist_to_period.(input_df.mag .* camera_pixel_pitch, 100e-3)
+    calculated_spatial_period_300 = dist_to_period.(input_df.mag .* camera_pixel_pitch, 300e-3)
+    true_spatial_periods = input_df.pit .* SLM_pixel_pitch .|> x->round(x, sigdigits=5)
+    global relerr100_all2 = relative_error.(calculated_spatial_period_100, true_spatial_periods) .* 100
+    global relerr300_all2 = relative_error.(calculated_spatial_period_300, true_spatial_periods) .* 100
+    df = DataFrame((; true_spatial_periods, calculated_spatial_period_100, calculated_spatial_period_300, relerr100_all2, relerr300_all2)) 
+    df |> x->round.(x, sigdigits=3) |> vscodedisplay
+end
+
+let input_df = processed_data_px2_1order
+    calculated_spatial_period_100 = dist_to_period.(input_df.mag .* camera_pixel_pitch, 100e-3)
+    calculated_spatial_period_300 = dist_to_period.(input_df.mag .* camera_pixel_pitch, 300e-3)
+    true_spatial_periods = input_df.pit .* SLM_pixel_pitch .|> x->round(x, sigdigits=5)
+    global relerr100_1st2 = relative_error.(calculated_spatial_period_100, true_spatial_periods) .* 100
+    global relerr300_1st2 = relative_error.(calculated_spatial_period_300, true_spatial_periods) .* 100
+    df = DataFrame((; true_spatial_periods, calculated_spatial_period_100, calculated_spatial_period_300, relerr100_1st2, relerr300_1st2)) 
+    df |> x->round.(x, sigdigits=3) |> vscodedisplay
+end
+
+
+##! Show graymax failure
+imname1 = "grating2D_graymax100_pitch7"
+imname2 = "grating2D_graymax255_pitch7"
+map(image_names2) do name
+    name==(imname1) || name==(imname2)
+end
+image_names2
+
+let image = Images.load("/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 3/Images 3 lab/grating2D_graymax255_pitch7.bmp")
+    image .|> Gray .|> gray .|> Float64 .|> log10 |> heatmap |> display
+    image
+end
+
+##! Visualizing "expected", fft of grating
+using FFTW
+mynorm(A) = (A .- minimum(A)) ./ (maximum(A) .- minimum(A))
+viz(A) = display(mynorm(A) .|> Gray)
+let image = Images.load("/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 3/Matlab generated gratings/grating2D_graymax255_pitch7.bmp")
+    imagemat = image .|> Gray .|> gray .|> Float64
+    dft = fft(imagemat) |> fftshift .|> abs #.|> log10
+    dft |> viz
+    # heatmap(dft_normalized, colormap=:grays)
+    # display(current_figure())
+end
+##
+1  # stop here when shift+enter
+#=
+
 all_centers2 = getproperty.(task1_imagecenters, :centers)
 
 distance_to_all_orders_px2 = [begin 
@@ -135,4 +233,4 @@ begin
     println("true_periods")
     display(true_periods)
 end
-##? Finding spatial period of source
+=#

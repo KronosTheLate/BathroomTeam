@@ -25,6 +25,9 @@ begin #? Masaging data
     task3_images = images[task3_mask][sorted_inds]
     task3_imagemats = task3_images .|> x->gray.(x) .|> float
 end
+task3_images[5]
+task3_images[5] .|> Gray .|> gray .|> 
+Float64 |> heatmap |> display
 
 with_theme(resolution=(1920÷2, 1080÷2), fontsize = 30) do#? Plotting
     means = mean.(task3_imagemats) .* 255
@@ -53,8 +56,6 @@ camera_pixel_pitch = 6.784e-3 / 1280
 SLM_pixel_pitch = 32e-6
 λ = 632.8e-9
 dist_to_period(dist, f) = f*λ/dist
-dist_to_period_100(dist) = dist_to_period(dist, 100e-3)
-dist_to_period_300(dist) = dist_to_period(dist, 300e-3)
 
 begin #? Masaging data
     task2_mask = occursin.("task2", image_names)  # Logical mask, used for indexing to get only pictures with "task3" in filename
@@ -181,7 +182,7 @@ task4_imagecenters = [  # manually determined centers, center first, pairwise fr
     (lam = NaN, pit = 5, rot = false, exp = 10, image_name = "task4_exp10_pitch5",      centers = [[473.41, 610.34], [470.81, 761.87], [476.53, 457.55]]),
     (lam = NaN, pit = 5, rot = true, exp = 10, image_name = "task4_exp10_pitch5_rot",   centers = [[473.79, 611.63], [292.24, 609.06], [655.65, 614.05], [110.45, 606.49], [837.27, 615.51]])
 ]
-begin
+begin #! Making processed_centerdf
     processed_centerdf = DataFrame()
     processed_centerdf.centers_rel = map(task4_imagecenters) do nt
         vec2imag(v) = v[1] + v[2]*im
@@ -200,7 +201,7 @@ processed_centerdf.centerdiffs
 processed_centerdf.distances
 processed_centerdf.angles
 
-let
+let  #! Making processed_data_px
     header = [:vec, :mag, :angle, :lam, :pit, :rot, :exp, :filename]
     mat = Matrix{Any}(undef, 0, length(header))
     for i in eachindex(task4_imagecenters)
@@ -218,19 +219,9 @@ let
 end
 processed_data_px |> vscodedisplay
 
-unique(processed_data_px, :filename) |> vscodedisplay
-processed_data_px |> vscodedisplay
-
 processed_data_px_1order = filter(processed_data_px) do row
-    if count(==(row.filename), processed_data_px.filename) ≤ 1
-        return true
-    else
-        if row.mag == minimum(filter(x->x.filename==row.filename, processed_data_px).mag)
-            return true
-        else
-            return false
-        end
-    end
+    count(==(row.filename), processed_data_px.filename) ≤ 1 ? true :
+    row.mag == minimum(filter(x->x.filename==row.filename, processed_data_px).mag) ? true : false
 end  # same as unique(processed_data_px, :filename), but more explicit to be sure
 processed_data_px_1order |> vscodedisplay
 

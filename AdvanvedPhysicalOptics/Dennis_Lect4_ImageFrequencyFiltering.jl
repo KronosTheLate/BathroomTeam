@@ -11,8 +11,8 @@ begin
     image_matrix .|> Gray
 end
 
-##¤ Coupld of functions
-mynorm(A) = A ./ maximum(A)
+##¤ Couple of functions
+mynorm(A) = (A .- minimum(A)) ./ (maximum(A) .- minimum(A))
 viz(A) = display(mynorm(A) .|> Gray)
 
 ##¤ High pass filtering
