@@ -26,8 +26,11 @@ begin #? Masaging data
     task3_imagemats = task3_images .|> x->gray.(x) .|> float
 end
 task3_images[5]
-task3_images[5] .|> Gray .|> gray .|> 
-Float64 |> heatmap |> display
+task3_images[5] .|> Gray .|> gray .|> Float64 |> heatmap |> display
+task3_images[5] .|> Gray .|> gray .|> Float64 |> rotr90 |> heatmap |> display
+task3_images[5] .|> Gray .|> gray .|> Float64 |> x->permutedims(x, (2, 1)) |> heatmap |> display
+task3_images[5] .|> Gray .|> gray .|> Float64 |> transpose |> heatmap |> display
+
 
 with_theme(resolution=(1920÷2, 1080÷2), fontsize = 30) do#? Plotting
     means = mean.(task3_imagemats) .* 255
@@ -119,6 +122,7 @@ let i=1 #? Locating centers
     task4_mask = occursin.("task4", image_names)  # Logical mask, used for indexing to get only pictures with "task3" in filename
     global task4_images = images[task4_mask] .|> x->Gray.(x)
     global task4_imagemats = task4_images  .|> x->gray.(x) .|> x->float.(x)
+    # task4_imagemats = rotr90.(task4_imagemats)  # Correct, but messes up rest of code
 
     n_images = length(task4_images)
     @show i
@@ -151,7 +155,7 @@ let i=1 #? Locating centers
     #! Note - log of intensity makes small peaks much clearer.
     current_figure()
 end
-
+task4_imagemats[1] |> rotr90
 task4_imagecenters_old = [  # manually determined centers, left to right
     (lam = 10, pit = NaN, rot = false, exp = 0.12, image_name = "task4_exp012_lam10",   centers = [[471.96, 715.82],[473.86, 610.25], [476.63, 500.07]]),
     (lam = 20, pit = NaN, rot = false, exp = 0.12, image_name = "task4_exp012_lam20",   centers = [[472.04, 664.1], [473.55, 611.38], [475.37, 551.56]]),
@@ -265,7 +269,6 @@ median(relerr100_1st),       median(relerr300_1st)
 
 ##¤ Diffraction efficiency
 processed_data_px_1order
-processed_centerdf |> vscodedisplay
 
 with_theme(fontsize=40) do
     overexposed_mask = [i ∈ [3, 4, 7, 8] ? true : false for i in 1:13] #map(x -> x.exp==0.12, task4_imagecenters)
@@ -291,6 +294,7 @@ with_theme(fontsize=40) do
         ymin = 0
         ymax = 0
         for (j, center) in enumerate(relevant_centers[i])
+            center = reverse(center)  # Rotated pictures
             box_inds = [(i, j) for i in -radius:radius, j in -radius:radius]
             circ_inds = filter(box_inds) do ind
                 dist_from_center = hypot(ind...)
@@ -303,6 +307,7 @@ with_theme(fontsize=40) do
             θs = range(0, 2π, 100)
             xs = radius .* cos.(θs) .+ center[1]
             ys = radius .* sin.(θs) .+ center[2]
+            # xs, ys = ys, xs  # Rotated pictures
             xmin = min(xmin, minimum(xs))
             ymin = min(ymin, minimum(ys))
             xmax = max(xmax, maximum(xs))
@@ -331,7 +336,7 @@ with_theme(fontsize=40) do
         filename = not_overexposed_filenames[i]
         Label(fig[0, :], (isnan(pit_from_filename(filename)) ? "Sinusoidal" : "Binary") * " grating" * ", Ratio = $ratio")
         resize_to_layout!(fig)
-        Makie.save(joinpath(homedir(), "Pictures", "DiffractionEfficiency_$(filename).png"), fig)
+        # Makie.save(joinpath(homedir(), "Pictures", "DiffractionEfficiency_$(filename).png"), fig)
         fig |> display
     end
 end
