@@ -3,8 +3,7 @@ using Images
 Axis = Makie.Axis  # Images also exports Axis
 using Statistics
 using DataFrames
-imdir = joinpath(pwd(), "Pictures")  # Assumed "Pictures" is inside pwd, and contains the thorcam pictures.
-
+imdir = "/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 2/Pictures"  # Assumed "Pictures" is inside pwd, and contains the thorcam pictures.
 
 let #! Loading pictures
     images_paths_all = readdir(imdir, join=true)
@@ -155,7 +154,7 @@ let i=1 #? Locating centers
     #! Note - log of intensity makes small peaks much clearer.
     current_figure()
 end
-task4_imagemats[1] |> rotr90
+# task4_imagemats[1] |> rotr90
 task4_imagecenters_old = [  # manually determined centers, left to right
     (lam = 10, pit = NaN, rot = false, exp = 0.12, image_name = "task4_exp012_lam10",   centers = [[471.96, 715.82],[473.86, 610.25], [476.63, 500.07]]),
     (lam = 20, pit = NaN, rot = false, exp = 0.12, image_name = "task4_exp012_lam20",   centers = [[472.04, 664.1], [473.55, 611.38], [475.37, 551.56]]),
@@ -294,7 +293,7 @@ with_theme(fontsize=40) do
         ymin = 0
         ymax = 0
         for (j, center) in enumerate(relevant_centers[i])
-            center = reverse(center)  # Rotated pictures
+            # center = reverse(center)  # Rotated pictures
             box_inds = [(i, j) for i in -radius:radius, j in -radius:radius]
             circ_inds = filter(box_inds) do ind
                 dist_from_center = hypot(ind...)
@@ -327,7 +326,7 @@ with_theme(fontsize=40) do
         ylims!(ax2, current_cen[2]-plotsidelength/blaval, current_cen[2]+plotsidelength/blaval)
         # hypot((relevant_centers[1] .- relevant_centers[2])...)
         avg_1st_order = mean(sums[2:3])
-        ratio = round(sums[1]/avg_1st_order, sigdigits=5)
+        ratio = round(avg_1st_order/sums[1], sigdigits=5)
         @show ratio
         println()
         hidedecorations!.((ax1, ax2))
@@ -336,7 +335,7 @@ with_theme(fontsize=40) do
         filename = not_overexposed_filenames[i]
         Label(fig[0, :], (isnan(pit_from_filename(filename)) ? "Sinusoidal" : "Binary") * " grating" * ", Ratio = $ratio")
         resize_to_layout!(fig)
-        # Makie.save(joinpath(homedir(), "Pictures", "DiffractionEfficiency_$(filename).png"), fig)
+        Makie.save(joinpath(homedir(), "Pictures", "DiffractionEfficiency_$(filename).png"), fig)
         fig |> display
     end
 end

@@ -184,8 +184,9 @@ mynorm(A) = (A .- minimum(A)) ./ (maximum(A) .- minimum(A))
 viz(A) = display(mynorm(A) .|> Gray)
 let image = Images.load("/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 3/Matlab generated gratings/grating2D_graymax255_pitch7.bmp")
     imagemat = image .|> Gray .|> gray .|> Float64
-    dft = fft(imagemat) |> fftshift .|> abs #.|> log10
+    dft = (fft(imagemat) |> fftshift .|> abs)  .+ 1000 .|> log10
     dft |> viz
+    dft
     # heatmap(dft_normalized, colormap=:grays)
     # display(current_figure())
 end
