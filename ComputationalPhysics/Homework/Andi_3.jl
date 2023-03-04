@@ -82,36 +82,40 @@ function plot_harm_osc(xtable2,anal,t,γ)
         return err_N
     end
 
-    E=zeros(size(t,1))
-    h=step(t)
-    for i in 1:size(t,1)
-        # @show typeof(E)
-        E[i]=error_vs_time(residual,h,i)
-    end
+    # I SHOULD NOT claculate the error for each time. Only the whole time.
+    # E=zeros(size(t,1))
+    # h=step(t)
+    # for i in 1:size(t,1)
+    #     # @show typeof(E)
+    #     E[i]=error_vs_time(residual,h,i)
+    # end
     # display(E)
 
-    # Plot error. NOTE +1E-16, to get ticks on plot. Should not be there, but log(0)=-∞
-    plot(t.+1E-16,E.+1E-16, labels="Error")
-    plot!(title = "Error vs. time, γ=$γ, N=$N")
-    Plots.plot!(legend=:right)
+    # Plot error. NOTE +1E-16, to get ticks on plot. Due to points at zero, so log(0)=-∞
+    plot(t,residual, labels="Residual")
+    plot!(title = "Residual vs. time, γ=$γ, N=$N")
+    plot!(legend=:right)
     xlabel!("t [s]")
-    error_plot1=ylabel!("Error [ ]")
+    error_plot1=ylabel!("Residual [ ]")
 
 
-    plot(t.+1E-16,E.+1E-16, labels="Error", yaxis=:log)
+    plot(t,residual, labels="Residual", yaxis=:log)
+    Plots.ylims!(1E-16,maximum(residual))
     # plot!(xticks=(1:10, 1:10), grid=true)
-    plot!(title = "Error vs. time, γ=$γ, N=$N")
-    Plots.plot!(legend=:right)
+    plot!(title = "Residual vs. time, γ=$γ, N=$N")
+    plot!(legend=:right)
     xlabel!("t [s]")
-    error_plot2=ylabel!("Error [ ]")
+    error_plot2=ylabel!("Residual [ ]")
 
 
-    plot(t.+1E-16,E.+1E-16, labels="Error", xaxis=:log, yaxis=:log)
+    plot(t,residual, labels="Residual", xaxis=:log, yaxis=:log)
+    Plots.ylims!(1E-16,maximum(residual))
+    Plots.xlims!(1E-2,maximum(t))
     # plot!(xticks=(1:10, 1:10), grid=true)
-    plot!(title = "Error vs. time, γ=$γ, N=$N")
-    Plots.plot!(legend=:right)
+    plot!(title = "Residual vs. time, γ=$γ, N=$N")
+    plot!(legend=:right)
     xlabel!("t [s]")
-    error_plot3=ylabel!("Error [ ]")
+    error_plot3=ylabel!("Residual [ ]")
 
     error_plot=plot(error_plot1, error_plot2, error_plot3, layout = (3,1))
     display(error_plot)
