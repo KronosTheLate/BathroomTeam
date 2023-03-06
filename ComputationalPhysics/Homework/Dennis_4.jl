@@ -1,6 +1,117 @@
 using GLMakie; Makie.inline!(true)
 using LinearAlgebra  # for `norm` of vectors
 
+"""
+    step_euler!(u⃗, ∂ₜ, stepsize)
+
+Given a state u⃗, a function ∂ₜ that gives the 
+slope of each state when applied to u⃗, and a 
+stepsize, update the state by the euler method.
+"""
+function step_euler!(∂ₜ, u⃗, stepsize)
+    # slopes = ∂ₜ(u⃗)
+    # Δu⃗ = stepsize * slopes
+    # @. u⃗ = u⃗ + Δu⃗
+    u⃗ .+= stepsize * ∂ₜ(u⃗)     # The 3 lines above in one
+    return nothing
+end
+
+"""
+    step_leapfrog!(u⃗, ∂ₜ, stepsize)
+
+Given a state u⃗, a function ∂ₜ that gives the 
+slope of each state when applied to u⃗, and a 
+stepsize, update the state by the leapfrog method.
+This means updating the first half of the states, 
+recomputing the slopes, and then updating the rest of the states.
+"""
+function step_leapfrog!(∂ₜ, u⃗, stepsize)  # Taking some care to remain general for 3D
+    u⃗[begin:end÷2] .+= stepsize * ∂ₜ(u⃗)[begin:end÷2]  # Updating position only
+    u⃗[end÷2+1:end] .+= stepsize * ∂ₜ(u⃗)[end÷2+1:end]  # u⃗ is partially updated, and used to calculate new slope
+    return nothing
+end
+
+function step_series(∂ₜ, tspan, N_points, u⃗₀, stepper!)
+    output = Matrix{Float64}(undef, length(u⃗₀), N_points)
+    u⃗ = u⃗₀  # State. Chanes each step
+    output[:, 1] = u⃗
+
+    # tpoints are needed for plotting after, 
+    # and to get stepsize
+    tpoints = range(0, tspan, N_points)
+    stepsize = step(tpoints)
+    for i in 2:N_points
+        stepper!(∂ₜ, u⃗, stepsize)
+        output[:, i] = u⃗
+    end
+    return (us = output, ts=tpoints)
+end
+
+let #? Plotting orbit and error
+    #* Problem definition
+    function ∂ₜ(u⃗)
+        rx, ry, px, py = u⃗
+        length_r_cubed = hypot(rx, ry)^3
+        return [px, py, -rx/length_r_cubed, -ry/length_r_cubed]  # Return SVector for performance?
+    end
+
+    tspan = 2π * 10
+    N_points = 10^4
+    stepper! = step_euler!
+    stepper! = step_leapfrog!
+    r⃗₀ = [1.0, 0.0]
+    p⃗₀ = [0, 1/√r⃗₀[1]]
+    u⃗₀ = vcat(r⃗₀, p⃗₀)
+
+    u⃗_ref(t, Ω=1) = [cos(Ω*t), sin(Ω*t), -sin(Ω*t), cos(Ω*t)]
+    #? Getting the solution
+    solver_name = typeof(stepper!) == typeof(step_euler!) ? "Euler" : 
+                  typeof(stepper!) == typeof(step_leapfrog!) ? "Leapfrog" : 
+                  "Solver not found"
+    us, ts = step_series(∂ₜ, tspan, N_points, u⃗₀, stepper!)
+    h = step(ts)
+
+    rs = @view us[1:2, :]
+    ps = @view us[3:4, :]
+
+    #? Analytical reference solution:
+    us_ref = hcat([u⃗_ref.(t) for t in ts]...)  #! wring shape
+    rs_ref = @view us_ref[1:2, :]
+    ps_ref = @view us_ref[3:4, :]
+        
+    #? Plotting orbits
+    fig = Figure(resolution=(1080÷2, 1080÷2))
+    ax = Axis(fig[1, 1], aspect=1)
+    @views scatterlines!(rs[1, :], rs[2, :], label="$solver_name sol",              markersize=range(2, 10, N_points))
+    @views scatterlines!(rs_ref[1, :], rs_ref[2, :], label="Analytical sol", markersize=range(2, 10, N_points))
+    axislegend()
+    fig |> display
+    
+    #? Plotting error
+    resids_r = rs .- rs_ref
+
+    energies_sim = [1/2 * norm(p)^2 - 1/norm(r) for (r, p) in zip(eachcol(rs), eachcol(ps))]
+    energies_ref = [1/2 * norm(p)^2 - 1/norm(r) for (r, p) in zip(eachcol(rs_ref), eachcol(ps_ref))]
+    resids_E = abs.(energies_sim .- energies_ref)
+    fig = Figure(resolution=(1080÷2, 1080÷2));
+    ax = Axis(fig[1, 1]);
+    
+    lines!(ts,     norm.(eachcol(rs)), label="$solver_name |r⃗|")
+    lines!(ts,     norm.(eachcol(rs_ref)), label="Ref |r⃗|")
+    lines!(ts, norm.(eachcol(resids_r)), label="||r⃗_ref - r⃗||")
+    lines!(ts,      resids_E, label="|E_ref - E|")
+    # @show extrema(energies[begin+ind_offset:end] .- minimum(energies))
+    # xlims!(1, tspan)
+    # ylims!(10^-8, 1.3)
+    # ax.yscale=log10
+    axislegend(position=(1, 0))
+    fig|>display
+end
+
+
+
+
+##! Old, before mutating stepper functions
 function integrate_euler(∇::Function, timespan, steps, u⃗₀)
     timepoints = range(0, timespan, steps)
     h = step(timepoints)
@@ -41,8 +152,8 @@ integrate_leapfrog(args) = integrate_leapfrog(args...)
 let #? Plotting orbit and error
     #? Problem definition
     ∇(u⃗) = [0 1; -1/norm(u⃗[1])^3 0]*u⃗
-    timespan = 10
-    N = 10^3
+    timespan = 2π * 10
+    N = 10^4
     # solver = integrate_euler
     solver = integrate_leapfrog
 
@@ -113,7 +224,7 @@ function get_error_and_stepsize(problem, solver, error_asfun_of_sol)
 end
 
 @time let  #? Convergence plot for 1b)
-    Ns = [round(Int64, 10 * 2^i) for i in 0:16]|>reverse
+    Ns = [round(Int64, 10 * 2^i) for i in 0:15]|>reverse
     # stepsizes = [2.0^i for i in -30:2:-15]
     hs = zeros(length(Ns))
     errs = zeros(length(Ns))
@@ -140,7 +251,7 @@ end
         prob = (∇, timespan, N, u⃗₀)
         errs[i], hs[i] = get_error_and_stepsize(prob, solver, error_asfun_of_sol)
     end
-    power = 1; power_prop(h) = h^power
+    power = 2; power_prop(h) = h^power
     fig, ax, _ = lines(hs[begin:end÷2], power_prop.(hs[begin:end÷2]) .* errs[1]/power_prop(hs[1]), 
     label="∝ h^$power", linewidth=6
     )
