@@ -18,6 +18,38 @@ end
 euler(args)=euler(args...)
 
 
+# Only fitted to Keplar problem, since knowledge of underlying variables seems needed.
+function leap_frog(f,x_start,t)
+    x=x_start
+    h=step(t)
+    xtot=zeros(size(x,1),size(t,1))
+    xtot[:,1]=x
+    for i in 2:size(t,1)
+        dx=f(x)
+        x[1:2]+=dx[1:2]*h
+        dx=f(x)
+        x[3:4]+=dx[3:4]*h
+        xtot[:,i]=x
+    end
+    # print(x₀)
+    return xtot
+end
+# leap_frog(args)=leap_frog(args...)
+
+
+# Differential equations to describe Kepler problem of one object orbiting 0,0 , like heavy sun.
+function d_dt_kepler(rp)
+    #rp of format rp=[x,y,p_x,p_y], and similar for drp
+    drp=[0.0; 0.0; 0.0; 0.0] #initialize to index
+    # See diff.eq. in problem sheet
+    drp[1]=rp[3]
+    drp[2]=rp[4]
+    drp[3]=-1/norm(rp[1:2])^3*rp[1]
+    drp[4]=-1/norm(rp[1:2])^3*rp[2]
+    return drp
+end
+
+
 using LaTeXStrings
 using GLMakie; Makie.inline!(true)
 function plot_orbit2(xtable,t,r_analytic) # Credit Dennis. Changed to fit my implementation -Andi
@@ -48,9 +80,12 @@ function plot_orbit2(xtable,t,r_analytic) # Credit Dennis. Changed to fit my imp
     # begin  # Plotting orbits
         # fig = Figure()
         ax = Axis(fig[1:2, 2], title="Orbit", ylabel="Y coordinate", xlabel="X coordinate", yaxisposition=:right, aspect=DataAspect())
-        scatterlines!(r_xs, r_ys, label=L"\vec{r}", color = Cycled(1), markersize=t ./ t[end] .* 10)
-        scatterlines!(p_xs, p_ys, label=L"\vec{p}", color = Cycled(2), markersize=t ./ t[end] .* 10)
-        scatterlines!(r_analytic[1,:], r_analytic[2,:], label=L"\vec{r}_{anal}", color = :red, markersize=t ./ t[end] .* 5)
+        SizeForMarker=t ./ t[end] .* 5
+        SizeForMarker=collect(SizeForMarker)
+        SizeForMarker[end]*=4
+        scatterlines!(r_xs, r_ys, label=L"\vec{r}", color = Cycled(1), markersize=SizeForMarker)
+        scatterlines!(p_xs, p_ys, label=L"\vec{p}", color = Cycled(2), markersize=SizeForMarker)
+        scatterlines!(r_analytic[1,:], r_analytic[2,:], label=L"\vec{r}_{anal}", color = :red, markersize=SizeForMarker./2)
         Legend(fig[:, 2], ax, tellwidth=false, tellheight=false, halign=:left, valign=:top)
     # end
     # r⃗ = positions .- real.(us_analytical) # Residuals
@@ -61,79 +96,118 @@ function plot_orbit2(xtable,t,r_analytic) # Credit Dennis. Changed to fit my imp
 end
 
 
-# Differential equations to describe Kepler problem of one object orbiting 0,0 , like heavy sun.
-function d_dt_kepler(rp)
-    #rp of format rp=[x,y,p_x,p_y], and similar for drp
-    drp=[0.0; 0.0; 0.0; 0.0] #initialize to index
-    # See diff.eq. in problem sheet
-    drp[1]=rp[3]
-    drp[2]=rp[4]
-    drp[3]=-1/norm(rp[1:2])^3*rp[1]
-    drp[4]=-1/norm(rp[1:2])^3*rp[2]
-    return drp
+using Plots
+plotly() # Interactive plots
+function plot_residuals(t,residual, residual_E,x,N=size(t,1))
+
+    # Plot error. NOTE +1E-16, to get ticks on plot. Due to points at zero, so log(0)=-∞
+    Plots.plot(t,residual, labels="Position residual")
+    Plots.plot!(title = "Residual vs. time, x(t=0)=$x, N=$N")
+    Plots.plot!(legend=:right)
+    Plots.xlabel!("t [s]")
+
+    Plots.plot!(t,residual_E, labels="Energy residual")
+    residual1=Plots.ylabel!("Residual [ ]")
+
+    Plots.plot(t,residual, labels="Position residual", yaxis=:log)
+    Plots.ylims!(1E-3,maximum(residual))
+    # plot!(xticks=(1:10, 1:10), grid=true)
+    Plots.plot!(title = "Residual vs. time, x(t=0)=$x, N=$N")
+    Plots.plot!(legend=:right)
+    Plots.xlabel!("t [s]")
+
+    Plots.plot!(t,residual_E, labels="Energy residual")
+    residual2=Plots.ylabel!("Residual [ ]")
+
+
+    #  plot(t,residual, labels="Residual", xaxis=:log, yaxis=:log)
+    #  Plots.ylims!(1E-16,maximum(residual))
+    #  Plots.xlims!(1E-2,maximum(t))
+    #  # plot!(xticks=(1:10, 1:10), grid=true)
+    #  plot!(title = "Residual vs. time, γ=$γ, N=$N")
+    #  plot!(legend=:right)
+    #  xlabel!("t [s]")
+    #  residual3=ylabel!("Residual [ ]")
+
+    residual_plot=Plots.plot(residual1, residual2, layout = (2,1))
+    display(residual_plot)
+end
+
+function plot_error_vs_h(hs, errors, errors_E, t₁, assumed_order, E_assumed_order=assumed_order)
+    t1_time=round(t₁)
+    Plots.scatter(hs,errors, labels="Position error", markershape=:cross, yaxis=:log, xaxis=:log)
+    Plots.plot!(title = "Error vs. stepsize, t₁=$t1_time")
+    Plots.plot!(legend=:bottomright)
+    Plots.xlabel!("h [ ]")
+    error_vs_h=Plots.ylabel!("Error [ ]")
+    f(x)=2*errors[1]*(x)^assumed_order
+    Plots.plot!(f, label="Theoretical (position) order: $assumed_order")
+
+    # E_assumed_order=assumed_order
+    Plots.scatter!(hs,errors_E, labels="Energy error", markershape=:cross)
+    h(x)=6*errors_E[1]*(x)^E_assumed_order
+    Plots.plot!(h, label="Theoretical (energy) order: $E_assumed_order")
+
+    display(error_vs_h)
 end
 
 ##
 
-# Solving a kepler problem with euler method
 
+# Vectors for error calculations, and convergence estimation.
+hs=[]
+errors=[]
+errors_E=[]
+
+# Initial conditions
 x=3
 y=0
 px=0
 py=1/sqrt(x) # p=1/sqrt(x) to get circular orbit.
 x₀=[x; y; px; py]
 
+
+# Time interval
 t₀=0
-t₁=(2*pi*x^(3/2))*10 #Normalize to whole round trips
+t₁=(2*pi*x^(3/2))*2 #Normalize to whole round trips
 N=10000
+
+# for t₁ in (2*pi*x^(3/2))*[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
+# Loop over N
+for N in [10, 50, 100, 200]#, 500, 1000, 2000, 4000, 8000]#, 16000, 32000, 64000]
 t=range(t₀,t₁,N)
 
+# xtable=euler(d_dt_kepler,x₀,t)
 
-xtable=euler(d_dt_kepler,x₀,t)
+# -- LEAP FROG CHANGING THE INPUT INITIAL CONDITION. I DO NOT KNOW WHY!?!?!
+# I ahve made a work-around be redifining the initial condition x₀ before and after the leap-frog method
+x₀=[x; y; px; py]
+# display(x₀)
+x_to_leap_frog=x₀
+xtable=leap_frog(d_dt_kepler,x_to_leap_frog,t)
+# display(x₀)
+x₀=[x; y; px; py]
+# -------------------------------------------------------------------------
+
 
 ω=1/norm([x₀[1];x₀[2]])^(3/2)
 r_anal=norm([x₀[1];x₀[2]])*[reshape(cos.(ω*t), 1, :); reshape(sin.(ω*t), 1, :)]
 p_anal=norm([x₀[1];x₀[2]])*ω*[reshape(-sin.(ω*t), 1, :); reshape(cos.(ω*t), 1, :)]
 
 
-residual=norm.(eachcol(xtable[1:2,:]))-norm.(eachcol(r_anal[1:2,:]))
+residual=norm.(eachcol(xtable[1:2,:]))-norm.(eachcol(r_anal)) #.-norm([x₀[1];x₀[2]])
+    # Note that i have flipped the order of calculated and analytical/true compared to problem set.
 # plot_orbit(xtable,t)
 plot_orbit2(xtable,t,r_anal)
 
 
-# let 
+E_num=norm.(eachcol(xtable[3:4,:])).*0.5-norm.(eachcol(xtable[1:2,:])).^(-1)
+E_anal=norm.(eachcol(p_anal)).*0.5-norm.(eachcol(r_anal)).^(-1)
+residual_E=E_num-E_anal
+    # Note that i have flipped the order of calculated and analytical/true compared to problem set.
 
 
-using Plots
-plotly() # Interactive plots
-
-# Plot error. NOTE +1E-16, to get ticks on plot. Due to points at zero, so log(0)=-∞
-Plots.plot(t,residual, labels="Residual")
-Plots.plot!(title = "Residual vs. time, x(t=0)=$x, N=$N")
-Plots.plot!(legend=:right)
-Plots.xlabel!("t [s]")
-error_plot1=Plots.ylabel!("Residual [ ]")
-
-Plots.plot(t,residual, labels="Residual", yaxis=:log)
-Plots.ylims!(1E-2,maximum(residual))
-# plot!(xticks=(1:10, 1:10), grid=true)
-Plots.plot!(title = "Residual vs. time, x(t=0)=$x, N=$N")
-Plots.plot!(legend=:right)
-Plots.xlabel!("t [s]")
-error_plot2=Plots.ylabel!("Residual [ ]")
-
-
-#  plot(t,residual, labels="Residual", xaxis=:log, yaxis=:log)
-#  Plots.ylims!(1E-16,maximum(residual))
-#  Plots.xlims!(1E-2,maximum(t))
-#  # plot!(xticks=(1:10, 1:10), grid=true)
-#  plot!(title = "Residual vs. time, γ=$γ, N=$N")
-#  plot!(legend=:right)
-#  xlabel!("t [s]")
-#  error_plot3=ylabel!("Residual [ ]")
-
-error_plot=Plots.plot(error_plot1, error_plot2, layout = (2,1))
-display(error_plot)
+plot_residuals(t,residual, residual_E ,x)
 
 h=step(t)
 function error_vs_time(residual,h,N)
@@ -141,9 +215,21 @@ function error_vs_time(residual,h,N)
     return err_N
 end
 
+error_at_h=error_vs_time(residual,h,N)
+error_E_at_h=error_vs_time(residual_E,h,N)
+
+append!(hs,h)
+append!(errors,error_at_h)
+append!(errors_E,error_E_at_h)
+
+end
+
+##
+
+# assumed_order=1
+assumed_order=2
+plot_error_vs_h(hs, errors, errors_E, t₁, assumed_order, assumed_order)
 
 
-
-# end
 
 
