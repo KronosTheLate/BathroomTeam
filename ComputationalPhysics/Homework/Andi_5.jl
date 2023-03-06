@@ -1,10 +1,8 @@
 using LinearAlgebra
 
 # Only fitted to Keplar problem, since knowledge of underlying variables seems needed.
-# PROLBEM with leap frog changing x_start outside the function whereas the inital
-# ... condition in each run in later for-loop changes
-function leap_frog(f,x_start,t)
-    x=x_start
+function leap_frog(f,x₀,t)
+    x=copy(x₀)
     h=step(t)
     xtot=zeros(size(x,1),size(t,1))
     xtot[:,1]=x
@@ -15,10 +13,9 @@ function leap_frog(f,x_start,t)
         x[3:4]+=dx[3:4]*h # Could interchange position and momentum update. 3:4->1:2
         xtot[:,i]=x
     end
-    # print(x₀)
     return xtot
 end
-# leap_frog(args)=leap_frog(args...)
+leap_frog(args)=leap_frog(args...)
 
 # Differential equations to describe Kepler problem of one object orbiting 0,0 , like heavy sun.
 function d_dt_kepler(rp)

@@ -19,8 +19,6 @@ euler(args)=euler(args...)
 
 
 # Only fitted to Keplar problem, since knowledge of underlying variables seems needed.
-# PROLBEM with leap frog changing x_start outside the function whereas the inital
-# ... condition in each run in later for-loop changes
 function leap_frog(f,x₀,t)
     x=copy(x₀)
     h=step(t)
@@ -33,10 +31,9 @@ function leap_frog(f,x₀,t)
         x[3:4]+=dx[3:4]*h # Could interchange position and momentum update. 3:4->1:2
         xtot[:,i]=x
     end
-    # print(x₀)
     return xtot
 end
-# leap_frog(args)=leap_frog(args...)
+leap_frog(args)=leap_frog(args...)
 
 function RK4(f,x₀,t)
     x=copy(x₀)
@@ -203,9 +200,9 @@ N=10000
 for N in [10, 20, 50, 100, 200, 500, 1000, 2000, 4000, 8000]#, 16000, 32000, 64000]
 t=range(t₀,t₁,N)
 
-xtable=euler(d_dt_kepler,x₀,t)
+# xtable=euler(d_dt_kepler,x₀,t)
 
-# xtable=leap_frog(d_dt_kepler,x₀,t)
+xtable=leap_frog(d_dt_kepler,x₀,t)
 # display(x₀)
 
 
