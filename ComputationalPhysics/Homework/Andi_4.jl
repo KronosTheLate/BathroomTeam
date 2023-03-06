@@ -19,6 +19,8 @@ euler(args)=euler(args...)
 
 
 # Only fitted to Keplar problem, since knowledge of underlying variables seems needed.
+# PROLBEM with leap frog changing x_start outside the function whereas the inital
+# ... condition in each run in later for-loop changes
 function leap_frog(f,x_start,t)
     x=x_start
     h=step(t)
@@ -26,15 +28,34 @@ function leap_frog(f,x_start,t)
     xtot[:,1]=x
     for i in 2:size(t,1)
         dx=f(x)
-        x[1:2]+=dx[1:2]*h
+        x[1:2]+=dx[1:2]*h # Could interchange position and momentum update. 1:2->3:4
         dx=f(x)
-        x[3:4]+=dx[3:4]*h
+        x[3:4]+=dx[3:4]*h # Could interchange position and momentum update. 3:4->1:2
         xtot[:,i]=x
     end
     # print(x₀)
     return xtot
 end
 # leap_frog(args)=leap_frog(args...)
+
+function RK4(f,x₀,t)
+    x=x₀
+    h=step(t)
+    xtot=zeros(size(x,1),size(t,1))
+    xtot[:,1]=x
+    for i in 2:size(t,1)
+        k1=f(x)
+        k2=f(x+h*k1/2)
+        k3=f(x+h*k2/2)
+        k4=f(x+h*k3)
+        x+=1/6*(k1+2*k2+2*k3+k4)*h
+        xtot[:,i]=x
+    end
+    
+    return xtot
+end
+RK4(args)=RK4(args...)
+
 
 
 # Differential equations to describe Kepler problem of one object orbiting 0,0 , like heavy sun.
@@ -110,7 +131,7 @@ function plot_residuals(t,residual, residual_E,x,N=size(t,1))
     residual1=Plots.ylabel!("Residual [ ]")
 
     Plots.plot(t,residual, labels="Position residual", yaxis=:log)
-    Plots.ylims!(1E-3,maximum(residual))
+    Plots.ylims!(1E-8,maximum(residual))
     # plot!(xticks=(1:10, 1:10), grid=true)
     Plots.plot!(title = "Residual vs. time, x(t=0)=$x, N=$N")
     Plots.plot!(legend=:right)
@@ -151,6 +172,11 @@ function plot_error_vs_h(hs, errors, errors_E, t₁, assumed_order, E_assumed_or
     display(error_vs_h)
 end
 
+function error_vs_time(residual,h,N)
+    err_N=√(sum(h.*(residual[1:N]).^2))
+    return err_N
+end
+
 ##
 
 
@@ -174,20 +200,22 @@ N=10000
 
 # for t₁ in (2*pi*x^(3/2))*[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4]
 # Loop over N
-for N in [10, 50, 100, 200]#, 500, 1000, 2000, 4000, 8000]#, 16000, 32000, 64000]
+for N in [10, 20, 50, 100, 200, 500, 1000, 2000, 4000, 8000]#, 16000, 32000, 64000]
 t=range(t₀,t₁,N)
 
 # xtable=euler(d_dt_kepler,x₀,t)
 
-# -- LEAP FROG CHANGING THE INPUT INITIAL CONDITION. I DO NOT KNOW WHY!?!?!
-# I ahve made a work-around be redifining the initial condition x₀ before and after the leap-frog method
-x₀=[x; y; px; py]
-# display(x₀)
-x_to_leap_frog=x₀
-xtable=leap_frog(d_dt_kepler,x_to_leap_frog,t)
-# display(x₀)
-x₀=[x; y; px; py]
-# -------------------------------------------------------------------------
+# # -- LEAP FROG CHANGING THE INPUT INITIAL CONDITION. I DO NOT KNOW WHY!?!?!
+# # I ahve made a work-around be redifining the initial condition x₀ before and after the leap-frog method
+# x₀=[x; y; px; py]
+# # display(x₀)
+# x_to_leap_frog=x₀
+# xtable=leap_frog(d_dt_kepler,x_to_leap_frog,t)
+# # display(x₀)
+# x₀=[x; y; px; py]
+# # -------------------------------------------------------------------------
+
+xtable=RK4(d_dt_kepler,x₀,t)
 
 
 ω=1/norm([x₀[1];x₀[2]])^(3/2)
@@ -210,10 +238,6 @@ residual_E=E_num-E_anal
 plot_residuals(t,residual, residual_E ,x)
 
 h=step(t)
-function error_vs_time(residual,h,N)
-    err_N=√(sum(h.*(residual[1:N]).^2))
-    return err_N
-end
 
 error_at_h=error_vs_time(residual,h,N)
 error_E_at_h=error_vs_time(residual_E,h,N)
@@ -227,7 +251,8 @@ end
 ##
 
 # assumed_order=1
-assumed_order=2
+# assumed_order=2
+assumed_order=4
 plot_error_vs_h(hs, errors, errors_E, t₁, assumed_order, assumed_order)
 
 
