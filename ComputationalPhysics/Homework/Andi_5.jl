@@ -18,15 +18,42 @@ end
 leap_frog(args)=leap_frog(args...)
 
 # Differential equations to describe Kepler problem of one object orbiting 0,0 , like heavy sun.
-function d_dt_kepler(rp)
-    #rp of format rp=[x,y,p_x,p_y], and similar for drp
-    drp=[0.0; 0.0; 0.0; 0.0] #initialize to index
+function d_dt_kepler(states,R)
+    N=size(states,1)
+
+    rx=states[:,1]
+    ry=states[:,2]
+    rz=states[:,3]
+    px=states[:,4]
+    py=states[:,5]
+    pz=states[:,6]
+
+    drx = Vector{Float64}(undef,N)
+    dry = Vector{Float64}(undef,N)
+    drz = Vector{Float64}(undef,N)
+    dpx = Vector{Float64}(undef,N)
+    dpy = Vector{Float64}(undef,N)
+    dpz = Vector{Float64}(undef,N)
+    # dp  = Vector{Vector{Float64}}(undef,N)
+
+    m=1
+    D=1
     # See diff.eq. in problem sheet
-    drp[1]=rp[3]
-    drp[2]=rp[4]
-    drp[3]=-1/norm(rp[1:2])^3*rp[1]
-    drp[4]=-1/norm(rp[1:2])^3*rp[2]
-    return drp
+
+    for i in 1:N
+        drx[i]=1/m*px[i]
+        dry[i]=1/m*py[i]
+        drz[i]=1/m*pz[i]
+
+        dp=-D*norm([rx[i]; ry[i]; rz[i]]-R)^2 .*([rx[i]; ry[i]; rz[i]]-R)
+        
+        # dp_temp=dp[i]
+        dpx[i]=dp[1]
+        dpy[i]=dp[2]
+        dpz[i]=dp[3]
+    end
+
+    return hcat(drx, dry, drz, dpx, dpy, dpz)
 end
 
 
@@ -43,12 +70,20 @@ t=range(t₀,t₁,Nt)
 N=300
 # rx = Vector{N}
 rx = Vector{Float64}(undef,N)
-rx[3] = 1
+# rx[3] = 1
 # display(rx)
 ry = Vector{Float64}(undef,N)
 rz = Vector{Float64}(undef,N)
 px = Vector{Float64}(undef,N)
 py = Vector{Float64}(undef,N)
 pz = Vector{Float64}(undef,N)
+
+states=[1 1 1 1 1 1 ; 2 2 2 2 2 2]
+change=d_dt_kepler(states,[0;0;0])
+display(change)
+
+
+cat(reshape(states,2,6,1),reshape(change,2,6,1),dims=3)
+
 
 
