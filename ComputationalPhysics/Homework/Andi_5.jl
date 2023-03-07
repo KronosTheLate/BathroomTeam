@@ -97,7 +97,7 @@ Nt=Int(round((t₁-t₀)/Δt))
 t=range(t₀,t₁,Nt)
 
 
-N=100
+N=30
 
 
 
