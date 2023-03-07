@@ -3,7 +3,7 @@ using LinearAlgebra
 
 # More general Euler method. Used for task 2
 function euler(f,x₀,t)
-    x=x₀
+    x=copy(x₀)
     h=step(t)
     xtot=zeros(size(x,1),size(t,1))
     xtot[:,1]=x
@@ -19,10 +19,8 @@ euler(args)=euler(args...)
 
 
 # Only fitted to Keplar problem, since knowledge of underlying variables seems needed.
-# PROLBEM with leap frog changing x_start outside the function whereas the inital
-# ... condition in each run in later for-loop changes
-function leap_frog(f,x_start,t)
-    x=x_start
+function leap_frog(f,x₀,t)
+    x=copy(x₀)
     h=step(t)
     xtot=zeros(size(x,1),size(t,1))
     xtot[:,1]=x
@@ -33,13 +31,12 @@ function leap_frog(f,x_start,t)
         x[3:4]+=dx[3:4]*h # Could interchange position and momentum update. 3:4->1:2
         xtot[:,i]=x
     end
-    # print(x₀)
     return xtot
 end
-# leap_frog(args)=leap_frog(args...)
+leap_frog(args)=leap_frog(args...)
 
 function RK4(f,x₀,t)
-    x=x₀
+    x=copy(x₀)
     h=step(t)
     xtot=zeros(size(x,1),size(t,1))
     xtot[:,1]=x
@@ -205,17 +202,11 @@ t=range(t₀,t₁,N)
 
 # xtable=euler(d_dt_kepler,x₀,t)
 
-# # -- LEAP FROG CHANGING THE INPUT INITIAL CONDITION. I DO NOT KNOW WHY!?!?!
-# # I ahve made a work-around be redifining the initial condition x₀ before and after the leap-frog method
-# x₀=[x; y; px; py]
-# # display(x₀)
-# x_to_leap_frog=x₀
-# xtable=leap_frog(d_dt_kepler,x_to_leap_frog,t)
-# # display(x₀)
-# x₀=[x; y; px; py]
-# # -------------------------------------------------------------------------
+xtable=leap_frog(d_dt_kepler,x₀,t)
+# display(x₀)
 
-xtable=RK4(d_dt_kepler,x₀,t)
+
+# xtable=RK4(d_dt_kepler,x₀,t)
 
 
 ω=1/norm([x₀[1];x₀[2]])^(3/2)
