@@ -241,9 +241,9 @@ end
 
 ##
 
-# assumed_order=1
+assumed_order=1
 # assumed_order=2
-assumed_order=4
+# assumed_order=4
 plot_error_vs_h(hs, errors, errors_E, t₁, assumed_order, assumed_order)
 
 
