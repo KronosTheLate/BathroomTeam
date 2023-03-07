@@ -70,9 +70,9 @@ function d_dt_kepler(states,R)
         α=1/N
         for j in 1:N #Note could cut computation time down, since every computation is calculated twice. 
                      #E.g. j=2 and jj=3 is similar but with *-1 as j=3 and jj=2
+            rj=[rx[j];ry[j];rz[j]]
             for jj in 1:N
-                if jj != j
-                    rj=[rx[j];ry[j];rz[j]]
+                if jj != j        
                     rjj=[rx[jj];ry[jj];rz[jj]]
                     F[j,:]+=α*(rj-rjj) / norm(rj-rjj)^3
                 end
