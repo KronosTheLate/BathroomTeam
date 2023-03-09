@@ -64,7 +64,7 @@ function d_dt_kepler(states,R)
         dpz[i]=dp[3]
     end
 
-    if true # Workaround to implement repulsive forces
+    if true # Repulsive forces
         #Implementation of repulsive force between particles. Can be toggled on and off
         F=zeros(N,3)
         α=1/N
@@ -142,7 +142,7 @@ anim = @animate for j in LinRange(1, size(rx,2), nframes)
     # axis setting... need to be last b/c DiffEq recipes will overwrite.
     # plot!(xaxis = ("x" ,(-30, 30)), yaxis = ("y", (-30,30)), zaxis=("z", (0, 60)),
         # title = "t = $(round(t, digits = 2))")
-    view=2
+    view=3
     plot!(xaxis = ("x" ,(-view, view)), yaxis = ("y", (-view,view)), zaxis=("z", (-view, view)),title = "N=$N, t = $(round(t[i], digits = 2))")
 end
 
