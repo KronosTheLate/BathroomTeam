@@ -13,7 +13,7 @@ dt_in_units_of_h = dt/h
 @variables x t
 
 u_x = cospi(x)
-# u_x = cospi(2x + 1)     # Look very cool, though unstable
+u_x = cospi(2x + 1)     # Look very cool, though unstable
 u_t = cos(t)
 u = u_x * u_t
 
@@ -42,7 +42,8 @@ scatterlines!(xrange, v_)
 # current_figure()
 
 secons_per_t = 3   # a factor in "sleep"
-##
+
+## Live plotting
 for t_idx = 1:Nt
     t0 = time()
     t_[] = dt * t_idx
@@ -58,4 +59,21 @@ for t_idx = 1:Nt
     ylims!(y_min, y_max)
 
     sleep(max(0, dt*secons_per_t - (time() - t0)))
+end
+
+
+## Write to file
+record(current_figure(), "my_video2.mp4", 1:Nt, 
+    framerate=(Nt/tmax/secons_per_t)|>round|>Int) do t_idx
+    t_[] = dt * t_idx
+    
+    global w += dt * diff(v_[]) / h
+    v_[][2:end-1] += dt / h * diff(w)
+    v_[] = v_[]  # trigger update of observable
+
+    global v_min, v_max = extrema(v_[])
+    global y_min = min(v_min, y_min)
+    global y_max = max(v_max, y_max)
+
+    ylims!(y_min, y_max)
 end
