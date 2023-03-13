@@ -77,3 +77,25 @@ record(current_figure(), "my_video2.mp4", 1:Nt,
 
     ylims!(y_min, y_max)
 end
+
+record(current_figure(), "my_video2.mp4", 1:Nt, 
+    framerate=(Nt/tmax/secons_per_t)|>round) do t_idx
+    t_[] = dt * t_idx
+    
+    global w += dt * diff(v_[]) / h
+    v_[][2:end-1] += dt / h * diff(w)
+    v_[] = v_[]  # trigger update of observable
+
+    global v_min, v_max = extrema(v_[])
+    global y_min = min(v_min, y_min)
+    global y_max = max(v_max, y_max)
+
+    ylims!(y_min, y_max)
+end
+
+let framerate = 1.0
+    if !isa(framerate, Integer)
+        @warn "The given framefrate is not a subtype of `Integer`, and will be rounded to the nearest integer. To supress this warning, provide an integer as the framerate."
+        framerate = round(Int, framerate)
+    end
+end
