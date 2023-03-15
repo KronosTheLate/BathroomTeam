@@ -9,7 +9,7 @@ tmax = 300
 Nt = 300
 
 h = 1
-dt = 0.01*tmax / Nt
+dt = tmax / Nt
 
 xrange = h * ((1:Nx).- Nx/2)
 p_now = exp.(-xrange.^2 * 0.01)
