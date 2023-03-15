@@ -9,7 +9,7 @@ tmax = 300
 Nt = 300
 
 h = 1
-dt = 0.9*tmax / Nt
+dt = 0.01*tmax / Nt
 
 xrange = h * ((1:Nx).- Nx/2)
 p_now = exp.(-xrange.^2 * 0.01)
@@ -36,7 +36,7 @@ for t_idx = 1:Nt
   p_new =  2 * p_now[2:end-1] - p_past[2:end-1] + (dt/h)^2 * diff(diff(p_now))
   p_past = p_now
   p_now[2:end-1] = p_new
-  if frame_nr <= t*10
+  if frame_nr <= t
     frame_nr = frame_nr + 1
     p_plot=Plots.plot(xrange, p_now, xlims=(minimum(xrange), maximum(xrange)), ylims=(-2, 2))
     display(p_plot)

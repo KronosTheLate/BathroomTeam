@@ -36,7 +36,7 @@ for ti in t
     p_now[2:end-1]=p_new
     p_now_plot=plot(x,p_now)
     display(p_now_plot)
-    sleep(0.02)
+    sleep(0.03)
 end
 
 
