@@ -1,6 +1,6 @@
 dir_exc = "/home/dennishb/Uni/Semester/8. Sem/Advanced Physical Optics/Lab excercise 5"
 using DelimitedFiles
-using GLMakie; Makie.inline!(false)
+using GLMakie; Makie.inline!(true)
 
 
 r_s(n₁, n₂, θᵢ, θₜ) = /(n₁*cos(θᵢ) - n₂*cos(θₜ), 
@@ -47,12 +47,14 @@ end
 
 ##
 using Optim
+using Cthulhu
+using BenchmarkTools
 xs = 1.0:10|>collect
 ys = @. 5*xs^2 + rand()   # Coefficient 5
 
-function lossfunc(parameters)
+function lossfunc(parameters, xs=xs, ys=ys)
     α, β = parameters  # destructuring assignment. Makes next line more readable
-    predictions = @. α*xs::Vector{Float64} + β*xs::Vector{Float64}^2
+    predictions = @. α*xs + β*xs^2
     return sum(abs, predictions-ys)
 end
 sol = optimize(lossfunc, [0, 0.0])
@@ -69,31 +71,36 @@ ps = [633e-9]
 dispersiondata_fused_silica = readdlm(joinpath(dir_exc, "dispersion_fused_silica.txt"))
 dispersiondata_PMMA = readdlm(joinpath(dir_exc, "dispersion_PMMA.TXT"))
 bla1, bla2 = eachcol(hcat(1:10, 11:20))
-let
-    data_p3 = readdlm(joinpath(dir_exc, "METALS_Gold_Johnson_Christy.txt"))
-    λs, ns, ks = data_p3|>eachcol
-    λs .*= 1e-6
-    c = 3e8
-    fs = c ./ λs
-    ωs = 2π*fs
+   
+##
+data_p3 = readdlm(joinpath(dir_exc, "METALS_Gold_Johnson_Christy.txt"))
+λs, ns, ks = data_p3|>eachcol
+λs .*= 1e-6
+c = 3e8
+fs = c ./ λs
+ωs = 2π*fs
 
-    ñ = ns .+ im .* ks
-    ϵ_rs = @. ns^2 - ks^2
-    ϵ_is = @. 2ns*ks
-    ϵs = @. ϵ_rs + im*ϵ_is
+ñ = ns .+ im .* ks
+ϵ_rs = @. ns^2 - ks^2
+ϵ_is = @. 2ns*ks
+ϵs = @. ϵ_rs + im*ϵ_is
 
-    function lossfunc(p)
-        ϵ∞, ωₚ, γ = p
-        predictions_ϵ = [ϵ∞ - ωₚ^2/(ω^2+γ^2) + im*ωₚ^2*γ/(ω*(ω^2+γ^2)) for ω in ωs]
-        residuals = predictions_ϵ - ϵs
-        sum(abs2, residuals)
-    end
-    # sol = optimize(lossfunc, [1, 1e15, 1e14],)
-    sol = optimize(lossfunc, [1, 1e15, 1e14], ParticleSwarm(n_particles=10))
-    @show sol.minimum
-    println("Minimizer")
-    display(sol.minimizer)
-    propertynames(sol)
+function lossfunc(p, ϵs=ϵs)
+    ϵ∞, ωₚ, γ = p
+    predictions_ϵ = [ϵ∞ - ωₚ^2/(ω^2+γ^2) + im*ωₚ^2*γ/(ω*(ω^2+γ^2)) for ω in ωs]
+    residuals = predictions_ϵ - ϵs
+    sum(abs2, residuals)
 end
+##
+p0 = [1, 1e12, 1e1]  #? Limit for finding decent minimum with default alg
+# p0 = [1, 1e6, 1e1]  #? Random element in particle swarm, but here the good minimum is found almost every time
+# sol = optimize(lossfunc, p0)
+# sol = optimize(lossfunc, p0, LBFGS())
+sol = optimize(lossfunc, p0, ParticleSwarm(lower=[Inf, 0, Inf], n_particles=50), Optim.Options(iterations=10_000))
+sol.minimizer
+@show sol.minimum
+println("Minimizer")
+display(sol.minimizer)
+##
 
 (:method, :initial_x, :minimizer, :minimum, :iterations, :iteration_converged, :x_converged, :x_abstol, :x_reltol, :x_abschange, :x_relchange, :f_converged, :f_abstol, :f_reltol, :f_abschange, :f_relchange, :g_converged, :g_abstol, :g_residual, :f_increased, :trace, :f_calls, :g_calls, :h_calls, :ls_success, :time_limit, :time_run, :stopped_by)
