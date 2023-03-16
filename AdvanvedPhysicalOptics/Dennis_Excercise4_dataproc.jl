@@ -37,9 +37,9 @@ begin
 end
 dataframe = all_dataframes[1][[begin+3, end-2], :]
 d1, d2 = 20.19, 21.35
-(d2-d1)/2
-d3, d4 = 18.15, (19.2+19.25)/2
-(d4-d3)/2
+mean(d1, d2) - d1
+# , [18.15, (19.2+19.25)/2], []
+all_dataframes[1]
 
 ##
 df3 = all_dataframes[3]
@@ -83,6 +83,21 @@ begin
     fig|>display
     # save(joinpath(pic_dir, "Spectrum_DCT_Laserdiode_HR.png"), fig)
 end
+
+begin
+    fig = Figure()
+    Label(fig[0, 1], "Spectrum (top) and IDCT of spectrum (bottom)\nfor \"Laserdiode HR\"", tellwidth=false)
+    ax, _ = scatterlines(fig[1, 1], data_itsl_spectrum.lam, data_itsl_spectrum[:, " I"])
+    ax.xlabel = "λ [nm]"
+    ax.ylabel = "Intensity"
+    ax, _ = scatterlines(fig[2, 1], idct(data_itsl_spectrum[:, " I"]))
+    ax.xlabel="Index"
+    ax.ylabel="IDCT of intensity"
+    fig|>display
+    # save(joinpath(pic_dir, "Spectrum_IDCT_Laserdiode_HR.png"), fig)
+end
+
+
 ##
 spectrum_filepaths = readdir(joinpath(my_dir, "Spectrum data"), join=true)
 for i in (1:5)

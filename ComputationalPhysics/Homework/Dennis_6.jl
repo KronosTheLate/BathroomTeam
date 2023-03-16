@@ -1,6 +1,6 @@
+using GLMakie; Makie.inline!(false); update_theme!(fontsize=25)
 using Symbolics
 using Symbolics: derivative
-using GLMakie; update_theme!(fontsize=25)
 Nx = 1+100
 Nt = 1+120
 
@@ -9,9 +9,6 @@ h = step(xrange)
 @show h
 dt = round(0.9h, sigdigits=5)
 println("dt/h = $(round(dt/h, sigdigits=3))")
-
-tmax = 
-
 dt_in_units_of_h = dt/h
 
 @variables x t
@@ -34,10 +31,11 @@ w = [substitute(u_dx, Dict(x=>xval-h/2, t=>-dt/2)) for xval in xrange[2:end]] .|
 t_ = Observable(0.0)
 v_ = Observable(v)
 
-fig = current_figure()
-empty!(fig)
-ax1 = Axis(fig[1, 1], title=@lift("dt = $(round(dt/h, sigdigits=3))h\nt = $(round($t_, digits=2))"),
-ylabel="∂ₜu", xlabel="x")
+fig = Figure()
+display(fig)
+ax1 = Axis(fig[1, 1], title=@lift("dt = $(round(dt/h, sigdigits=3))h\nt = $(round($t_, digits=2))"))
+ax1.ylabel="∂ₜu"
+ax1.xlabel="x"
 y_min, y_max = extrema(v_[])
 
 v_analytical = Observable([substitute(u_dt, Dict(x=>xval, t=>0)) for xval in xrange] .|> Symbolics.value)
@@ -46,17 +44,15 @@ y2_min, y2_max = extrema(errors[])
 
 scatterlines!(ax1, xrange, v_analytical, label="Analytical", color=:green)
 scatterlines!(ax1, xrange, v_, label="Numerical", color=:black)
-axislegend()
+# axislegend()
 
 ax2, _ = scatterlines(fig[2, 1], xrange, errors, label="Error", color=:red)
-axislegend()
-# Uncomment and run to open window. If window is open, 
-# the rest of the script only modifies it.
-# current_figure()
+# axislegend()
 
 secons_per_t = 2   # a factor in "sleep"
 
 ## Live plotting
+display(fig)
 for _ = 1:Nt
     t0 = time()
     t_[] += dt
