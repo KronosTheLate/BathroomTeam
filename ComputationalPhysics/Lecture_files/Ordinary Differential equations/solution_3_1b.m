@@ -59,3 +59,4 @@ figure();
 loglog(1./N_range, convergence, 'x', 'linewidth', 2);
 hold on;
 loglog(1./N_range, convergence(end) * N_range(end) ./ N_range, '--');
+
