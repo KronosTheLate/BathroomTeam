@@ -25,8 +25,8 @@ convergence_plot    = plot()
 
 for n in 1:length(step_size)
     #numerical = euler_integration(system_func,rp,0,Tmax,step_size[n])
-    numerical = leapfrog_integration(system_func,rp,0,Tmax,step_size[n])
-    #numerical = RK4(system_func,rp,0,Tmax,step_size[n])
+    #numerical = leapfrog_integration(system_func,rp,0,Tmax,step_size[n])
+    numerical = RK4(system_func,rp,0,Tmax,step_size[n])
     plot!(orbit_plot,numerical[1,:],numerical[2,:],aspect_ratio=:equal)
     print(n)
 
