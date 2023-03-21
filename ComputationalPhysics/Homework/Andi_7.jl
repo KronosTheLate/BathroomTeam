@@ -17,7 +17,7 @@ p_now = exp.(-xrange.^2 * 0.01)
 # p_now = exp(-xrange.^2 * 0.3);
 # p_now = zeros(Nx, 1);
 # p_now(40:60) = 1;
-p_past = p_now
+p_past = copy(p_now)
 
 
 # function diff2nd(vector) #should be the same as diff(diff())
@@ -34,13 +34,13 @@ for t_idx = 1:Nt
   t = dt * t_idx
 
   p_new =  2 * p_now[2:end-1] - p_past[2:end-1] + (dt/h)^2 * diff(diff(p_now))
-  p_past = p_now
-  p_now[2:end-1] = p_new
-  if frame_nr <= t
+  p_past = copy(p_now)
+  p_now[2:end-1] = copy(p_new)
+  if frame_nr <= t/5
     frame_nr = frame_nr + 1
     p_plot=Plots.plot(xrange, p_now, xlims=(minimum(xrange), maximum(xrange)), ylims=(-2, 2))
     display(p_plot)
-    sleep(0.1)
+    sleep(0.04)
   end
 end
 

@@ -1,7 +1,7 @@
 #using GLMakie; Makie.inline!(true) #This is for plotting. 'true' argument denotes inline plots in vscode
 using LinearAlgebra #For Linear Algebra math
 using Plots
-plotly()
+plotly() #For interactive plots
 
 ##---------------A--------------##
 

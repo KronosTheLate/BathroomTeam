@@ -1,9 +1,9 @@
-function euler_integration(system_matrix, initial_values, t_start, t_end, step_size )
+function euler_integration(system_func, initial_values, t_start, t_end, step_size )
     #This function does numerical integration using Euler's method in order to
     #solve system of Ordinary Differential Equations (ODEs)
 
     #Arguments:
-    # system_matrix (A):    a matrix describing the system of eqs. , i.e. A*x=dx/dt
+    # system_function (A):    a function describing the system of eqs. , i.e. f(x)=dx/dt
     # initial_values:       initial conditions for the system
     # t_start:              start time of integration
     # t_end:                end time of integration
@@ -28,7 +28,7 @@ function euler_integration(system_matrix, initial_values, t_start, t_end, step_s
 
     #for loop to implement Euler's method
     for i in 2:N_steps
-        dx = system_matrix*x_vect
+        dx = system_func(x_vect)
         x_vect += dx * (t_vector[i] - t_vector[i-1])
         x_solved[:,i] = x_vect
 
