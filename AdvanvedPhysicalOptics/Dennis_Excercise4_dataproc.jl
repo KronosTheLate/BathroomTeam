@@ -1,4 +1,5 @@
 using XLSX, DataFrames, CSV
+using Statistics
 using GLMakie, FFTW; Makie.inline!(true)
 pic_dir = joinpath(homedir(), "Pictures")  # Override in below if-statement if you want pictures elsewhere
 if occursin("dennishb", homedir())  # My hacky way of checking which computer I am on
@@ -22,22 +23,28 @@ update_theme!(fontsize=20, markersize=10)
 
 ##? Plotting
 begin
-    fig = Figure()
+    fig = Figure(resolution=(1280, 1080), fontsize=30)
     for i in eachindex(all_dataframes)
         dataframe = all_dataframes[i]
         title = titles[i]
         ax, _ = scatterlines(fig[i, 1], eachcol(dataframe)..., linestyle="-")
         ax.xlabel, ax.ylabel = propertynames(dataframe) .|> string
         ax.title = title
+        if i==1
+            vlines!([20.19, 21.35], linewidth=1, color=:black)
+        elseif i==2
+            vlines!([18.15, 19.225], linewidth=1, color=:black)
+        end
         # Makie.inline!(false)
         # DataInspector()
-        fig|>display
         # Makie.inline!(true)
     end
+    fig|>display
+    save(joinpath(pic_dir, "Amplitude_as_func_of_position_x3.png"), fig)
 end
 dataframe = all_dataframes[1][[begin+3, end-2], :]
 d1, d2 = 20.19, 21.35
-mean(d1, d2) - d1
+mean([d1, d2]) - d1
 # , [18.15, (19.2+19.25)/2], []
 all_dataframes[1]
 
@@ -46,7 +53,6 @@ df3 = all_dataframes[3]
 xs_df3 = df3[:, 1]
 ys_df3 = df3[:, 2]
 using Optim
-using Statistics
 normal(x, μ, σ, A) = A/(σ*√(2π)) * exp(-1/2 * ((x-μ)/σ)^2)
 
 function lossfunc(params, xs=xs_df3, ys=ys_df3)
@@ -64,8 +70,11 @@ begin
     scatterlines!(xs_df3, ys_df3, label="Data")
     ax.xlabel="Position [mm]"
     ax.ylabel="Intensity"
+    minimizer = round.(sol.minimizer, sigdigits=3)
+    ax.title = "A = $(minimizer[end]), μ = $(minimizer[1]), σ = $(minimizer[2])"
     axislegend(position=(1, 0))
-    fig
+    fig|>display
+    # save(joinpath(pic_dir, "Fitted_intensity_gaussian.png"), fig)
 end
 
 
