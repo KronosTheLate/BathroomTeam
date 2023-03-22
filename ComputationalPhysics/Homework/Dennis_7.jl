@@ -1,12 +1,5 @@
-##! Setting up figure
+using BenchmarkTools
 using GLMakie; Makie.inline!(false)
-fig = Figure(); display(fig)
-t = Observable(0.0)
-ax = Axis(fig[1, 1], title=@lift("t = $(round($t, sigdigits=3))"))
-u = Observable(zeros(Nx, Ny))
-clims = Observable([-0.5, 0.5])
-hm = heatmap!(ax, u, colorrange=clims)
-Colorbar(fig[1, 2], limits=clims)
 
 ##! Setting up problem
 Nx = 100
@@ -16,6 +9,57 @@ ys = range(-0.5, 0.5, Ny)
 h = step(xs)
 dt = 0.5h
 
+##! Setting up figure
+# In function so that I can reset the figure
+# without scrolling up
+function fig_init(include_3d=true)
+    global fig = Figure(fontsize=30)
+    display(fig)
+    global t = Observable(0.0)
+    global mask_active = Observable(false)
+    rich_mask_active = @lift($mask_active ? rich("Mask on", color=:green) : rich("Mask off", color=:red))
+    rich_time = @lift(rich("t = $(round($t, sigdigits=3))\t\t"))
+    title_string = @lift(rich($rich_time, $rich_mask_active))
+    global ax = Axis(fig[1, 1], title=title_string)
+    ax.aspect=1
+    global u = Observable(zeros(Nx, Ny))
+    global clims = Observable([-0.5, 0.5])
+    global hm = heatmap!(ax, xs, ys, u, colorrange=clims)
+    if include_3d
+        ax3 = Axis3(fig[2, 1])
+        surface!(ax3, xs, ys, u, colorrange=clims)
+    end
+    Colorbar(fig[:, 2], limits=clims)
+    return nothing
+end
+fig_init()
+##! Function definitions
+function update_Δu!(u1=u1, Δu=Δu, ∂_x²u1=∂_x²u1, ∂_y²u1=∂_y²u1)
+    ∂_x²u1 .= diff(diff(u1, dims=1), dims=1)
+    ∂_y²u1 .= diff(diff(u1, dims=2), dims=2)
+    Δu .= ∂_x²u1[:, 2:end-1] + ∂_y²u1[2:end-1, :]  #? Updating Δu
+    return nothing
+end
+
+function update_us!(u0=u0, u1=u1, u2=u2)
+    update_Δu!()
+    #? Updating the u's
+    u2[2:Nx-1, 2:Ny-1] = 2u1[2:Nx-1, 2:Ny-1] - u0[2:Nx-1, 2:Ny-1] + (dt/h)^2*Δu
+    u0 .= u1
+    u1 .= u2
+    return nothing
+end
+# @btime update_us!()  #¤ Quite fast, very few allocations <3
+# display(@benchmark update_us!())
+##! Setting up mask
+mask_border = [(hypot(x, y) ≤ 0.5 ? 1 : 0) for x in xs, y in ys]
+# heatmap(mask_border, axis=(aspect=1,))
+function apply_mask!(u0=u0, u1=u1, u2=u2; mask=mask_border)
+    u0 .*= mask_border
+    u1 .*= mask_border
+    u2 .*= mask_border
+    return nothing
+end
 ##! Initialization
 #* Note that u0, u1 and u2 are used for computation
 #* u is used for plotting
@@ -27,44 +71,51 @@ u2 = zeros(Nx, Ny)      #! u_new
 Δu = zeros(size(u0).-2)
 
 #? Initial conditions
-u0 .= [cospi(x)*cospi(y) for x in xs, y in ys]
-u1 .= [cospi(x)*cospi(y) for x in xs, y in ys]
-
-
-##! Function definitions
-function update_Δu!(u1=u1, Δu=Δu, ∂_x²u1=∂_x²u1, ∂_y²u1=∂_y²u1)
-    ∂_x²u1 .= diff(diff(u1, dims=1), dims=1)
-    ∂_y²u1 .= diff(diff(u1, dims=2), dims=2)
-    Δu .= ∂_x²u1[:, 2:end-1] + ∂_y²u1[2:end-1, :]  #? Updating Δu
-    return nothing
-end
-
-function update_us!(u1=u1, ∂_x²u1=∂_x²u1, ∂_y²u1=∂_y²u1, Δu=Δu)
-    update_Δu!()
-    #? Updating the u's
-    u2[2:Nx-1, 2:Ny-1] = 2u1[2:Nx-1, 2:Ny-1] - u0[2:Nx-1, 2:Ny-1] + (dt/h)^2*Δu
+case_initial_cond = 2
+if case_initial_cond == 1
+    u1 .= [cospi(x)*cospi(y) for x in xs, y in ys]
     u0 .= u1
-    u1 .= u2
-    return nothing
+elseif case_initial_cond == 2
+    u1 .= [exp(-50(x^2+y^2)) for x in xs, y in ys]
+    u0 .= u1
+else
+    error("Initial condition case not recognized.")
 end
+t[] = 0
+u[] = u1  # Trigger update
 
-@profview for _ in 1:1000
-    update_us!()
-end
 ##! Simulating and plotting
-seconds_per_t = 0.1
-for _ in 1:400
+fig_init(false)
+# heatmap!(mask_border, colormap=:grays, transparency=true, overdraw=true)
+seconds_per_t = 5
+for counter in 0:10
     t0 = time()
     t[] += dt
+    cond0 = false
+    cond1 = true
+    cond2 = counter % 100 ≥ 50
+    cond3 = counter ≥ 160
+    cond4 = 250 ≥ counter ≥ 160
+    if cond1
+        mask_active[] = true
+        apply_mask!()
+    else
+        mask_active[] = false
+    end
     update_us!()
-    u[] = u1  # Trigger update
+    u[] = log10.(abs.(u1) .+ 1e-14)  # Trigger update
     min_old, max_old = clims[]
     min_now, max_now = extrema(u[])
-    clims[] = [min(min_old, min_now * 1.05), max(max_old, max_now * 1.05)]  # * 1.05 makes a limit of 0.99 include tick at 1
+
+    contract_limits = true
+    if contract_limits
+        clims[] = [min_now * 1.05, max_now * 1.05]  # * 1.05 makes a limit of 0.99 include tick at 1
+    else
+        clims[] = [min(min_old, min_now * 1.05), max(max_old, max_now * 1.05)]  # * 1.05 makes a limit of 0.99 include tick at 1
+    end
     
     sleep(max(0, seconds_per_t*dt - (time()-t0)))
 end
-
 
 
 ##!=        Old code below      =!##
