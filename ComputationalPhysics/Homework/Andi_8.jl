@@ -13,11 +13,11 @@ function RK4(f,x₀,t)
     # xtot=zeros(size(x,1),size(t,1))
     xtot[:,1]=x
     for i in 2:size(t,1)
-        # k1=f(x)
-        # k2=f(x+h*k1/2)
-        # k3=f(x+h*k2/2)
-        # k4=f(x+h*k3)
-        # x+=1/6*(k1+2*k2+2*k3+k4)*h
+        k1=f(x)
+        k2=f(x+h*k1/2)
+        k3=f(x+h*k2/2)
+        k4=f(x+h*k3)
+        x+=1/6*(k1+2*k2+2*k3+k4)*h
         xtot[:,i]=x
     end
     
@@ -53,6 +53,7 @@ t=range(t₀,t₁,Nt)
 ψ=@. exp(-κ*x^2)
 # ψ=@. exp(-1/4*x^2)
 # ψ=@. exp(-κ*(x-4)^2)
+# ψ =@. exp(-2(x-4)^2) - exp(-2(x + 4)^2)
 
 
 function ℋψ(ψ) # Note that this function returns the Hamiltonian ACTING ON ψ
@@ -98,13 +99,13 @@ end
 
 # Extra material. Calculating energy.
 E_tot = Vector{ComplexF64}(undef,Nt)
+ψ_current = Vector{ComplexF64}(undef,size(ψ,1))
 for i in 1:Nt
     
-    # ψ_current = Vector{ComplexF64}(undef,size(ψ,1))
     ψ_current[:]=ψ_tot[:,i]
     # ψ[:,1] = ψ_tot[:,1]
 
-    E_tot[i]=ψ_current'*ℋψ(ψ_current)
+    E_tot[i]=h*ψ_current'*ℋψ(ψ_current) #OBS: times step size h to get the analytical value
 end
 E_tot
 plot(t, real(E_tot), label="Real(E_tot)")
@@ -117,7 +118,7 @@ plot!(title = "Energy of wavefunction")
 ##
 
 
-ψ_prop = @. log10(abs(ψ_tot)^2)
+ψ_prop = @. log10(abs(ψ_tot)^2 .+10^-7) #10^-7 to better see behaviour
 # ψ_prop = @. (abs(ψ_tot)^2)
 
 ψplot = heatmap(t, x, ψ_prop)
@@ -134,7 +135,11 @@ plot!(title = "Propapility of wavefunction |ψ|²")
 κ=1/2
 ω=1/2
 ψ_anal = exp.(-κ*x.^2)*transpose(exp.(-im*ω*t))
-ψ_anal_prop = @. log10(abs(ψ_tot)^2)
+
+# heatmap(real(ψ_anal))
+# heatmap(real(ψ_tot))
+
+ψ_anal_prop = @. log10(abs(ψ_tot)^2 .+10^-7)
 # ψ_anal_prop = @. (abs(ψ_tot)^2)
 ψplot_anal = heatmap(t, x, ψ_anal_prop)
 xlabel!("Normalized time, t [ ]")
@@ -149,16 +154,16 @@ xlabel!("Normalized time, t [ ]")
 ylabel!("Normalized position, x [ ]")
 plot!(title = "Residual for wavefunction |ψ|²")
 
-plot(ψplot, ψplot_anal, ψplot_residual, layout=(3,1))
-
+total_plot=plot(ψplot, ψplot_anal, ψplot_residual, layout=(3,1))
+display(total_plot)
 
 function error_cal1(residual,h)
     Nt=size(residual,2)
     err_N = Vector{Float64}(undef,Nt)
     for i in 1:Nt
-        # err_N[i]=√(sum(h.*(abs.(residual[:,i])).^2)) # L2 norm in space
+        err_N[i]=√(sum(h.*(abs.(residual[:,i])).^2)) # L2 norm in space
 
-        err_N[i]= abs(residual[Int(round(size(residual,1)/2)),i]) #Just a single point
+        # err_N[i]= abs(residual[Int(round(size(residual,1)/2)),i]) #Just a single point
     end
     return err_N
 end
@@ -190,7 +195,8 @@ error_tot=error_cal2(residual_vs_t, step(t))
 
 ##
 
-Ns=[20, 50, 100, 200, 300, 500, 800]
+# Ns=[20, 50, 100, 200, 300, 500, 800]
+Ns=20:2:200
 
 error_tot_vec = Vector{Float64}(undef,size(Ns,1))
 time_step_vec = Vector{Float64}(undef,size(Ns,1))
@@ -222,6 +228,25 @@ time_step_vec[jjj]=step(t)
 ω=1/2
 ψ=@. exp(-κ*x^2)
 
+# NEED this here to update xs in it.
+function ℋψ(ψ) # Note that this function returns the Hamiltonian ACTING ON ψ
+    # x=range(-10,10,N+1)
+    # xs=x[1:end-1]
+    xs=x # OBS, I take x-values from a globally defined variable. 
+        #Not good practice, but made such that it works in the more general RK4
+
+    # Calculate second order derivative in space
+    ψf=fft(ψ)
+    A=im*k0*[range(0,N/2-1,Int(N/2)); range(-N/2,-1,Int(N/2))]
+    A=A.^2 #The second order derivative
+    ψf_ddx=A.*ψf
+    ψ_ddx=ifft(ψf_ddx)
+
+    Hψ= 1/2*(-ψ_ddx+xs.^2 .*ψ)
+    return Hψ    
+end
+
+
 # Calculating ψ over time with Runge Kutta 4
 ψ_tot=RK4(dψ,ψ,t)
 
@@ -234,9 +259,22 @@ time_step_vec[jjj]=step(t)
 residual = ψ_tot-ψ_anal
 
 residual_vs_t = error_cal1(residual, step(x))
+
+# display(residual_vs_t)
 error_tot_vec[jjj]=error_cal2(residual_vs_t, step(t))
 
 end
 
-plot(time_step_vec,error_tot_vec, xaxis=:log, yaxis=:log)
+# display(error_tot_vec)
+
+# plot(time_step_vec,error_tot_vec)
+# plot(time_step_vec,error_tot_vec, xaxis=:log, yaxis=:log)
+# plot(time_step_vec,error_tot_vec, yaxis=:log)
+plot(Ns,error_tot_vec, yaxis=:log)
+plot(Ns,error_tot_vec, xaxis=:log, yaxis=:log)
+xlabel!("N")
+ylabel!("Error")
+plot!(title="Convergence plot")
+
+
 
