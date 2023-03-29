@@ -48,10 +48,10 @@ t=range(t₀,t₁,Nt)
 
 
 #Initial condition
-B=1
-A=sqrt(2)*B
-Ω=B^2
-ψ =@. A/cosh(B*x)
+# B=1
+# A=sqrt(2)*B
+# Ω=B^2
+# ψ =@. A/cosh(B*x)
 
 # κ=1/2
 # ω=1/2
@@ -62,6 +62,19 @@ A=sqrt(2)*B
 # ψ=@. exp(-1/4*(x-4)^2)
 # ψ=@. exp(-2*(x-4)^2)
 # ψ =@. exp(-2(x-4)^2) - exp(-0.25(x + 4)^2)
+
+# ψ=@. exp(-1/30*x^2)
+# ψ=@. 10*exp(-1/30*(x-5)^2)
+# ψ=@. 0.05*exp(-1/30*x^2)
+# ψ=@. 15*exp(-1/30*(x-5)^2) #Maximum useable abmplitude, else NaN
+
+# ψ =@. sqrt(8)/cosh(2*x)
+# ψ =@. sqrt(2)*exp(0.1*im*x)/cosh(x)
+# ψ =@. sqrt(8)*exp(-0.2*im*x)/cosh(2*x+30) - sqrt(8)/cosh(2*x)
+# ψ =@. sqrt(8)/cosh(x)
+ψ =@. sqrt(8)*exp(-0.25*im*x)/cosh(2*x+20) - sqrt(8)/cosh(2*x) + sqrt(8)*exp(0.15*im*x)/cosh(2*x-30) - sqrt(8)*exp(-0.4*im*x)/cosh(2*x+40)
+
+
 
 
 function ℋψ(ψ) # Note that this function returns the Hamiltonian ACTING ON ψ
@@ -76,6 +89,7 @@ function ℋψ(ψ) # Note that this function returns the Hamiltonian ACTING ON �
     Hψ=@. (ψ_ddx+ abs2(ψ) *ψ)
     # Hψ=@. (ψ_ddx)
     # Hψ=@. (abs(ψ)^2 *ψ)
+    
     return Hψ    
 end
 
@@ -119,10 +133,12 @@ plot!(title = "Energy of wavefunction")
 xlabel!("t [ ]")
 ylabel!("x [ ]")
 plot!(title = "Propapility of wavefunction |ψ|²")
+display(ψplot)
 
 
-
-
+# heatmap(real(ψ_tot))
+# heatmap(imag(ψ_tot))
+heatmap(angle.(ψ_tot))
 
 
 ## Part c
