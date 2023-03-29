@@ -54,6 +54,10 @@ t=range(t₀,t₁,Nt)
 # ψ=@. exp(-1/4*x^2)
 # ψ=@. exp(-κ*(x-4)^2)
 # ψ =@. exp(-2(x-4)^2) - exp(-2(x + 4)^2)
+# ψ=@. exp(-1/4*(x-4)^2)
+# ψ=@. exp(-2*(x-4)^2)
+# ψ =@. exp(-2(x-4)^2) - exp(-0.25(x + 4)^2)
+
 
 
 function ℋψ(ψ) # Note that this function returns the Hamiltonian ACTING ON ψ
@@ -115,7 +119,7 @@ ylabel!("Normalized Energy [ ]")
 plot!(title = "Energy of wavefunction")
 
 
-##
+
 
 
 ψ_prop = @. log10(abs(ψ_tot)^2 .+10^-7) #10^-7 to better see behaviour
