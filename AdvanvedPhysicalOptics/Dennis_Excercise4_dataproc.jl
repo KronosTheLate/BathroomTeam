@@ -40,7 +40,7 @@ begin
         # Makie.inline!(true)
     end
     fig|>display
-    save(joinpath(pic_dir, "Amplitude_as_func_of_position_x3.png"), fig)
+    save(joinpath(pic_dir, "result_interferogram.png"), fig)
 end
 dataframe = all_dataframes[1][[begin+3, end-2], :]
 d1, d2 = 20.19, 21.35
@@ -66,7 +66,7 @@ sol = optimize(lossfunc, [mean(ys_df3), std(ys_df3), maximum(ys_df3)])
 sol.minimizer
 fitted_normal(x) = normal(x, sol.minimizer...)
 begin
-    fig, ax, _ = scatterlines(xs_df3, fitted_normal.(xs_df3), label="Fitted")
+    fig, ax, _ = scatterlines(xs_df3, fitted_normal.(xs_df3), label="Fitted gaussian × A")
     scatterlines!(xs_df3, ys_df3, label="Data")
     ax.xlabel="Position [mm]"
     ax.ylabel="Intensity"
@@ -74,7 +74,7 @@ begin
     ax.title = "A = $(minimizer[end]), μ = $(minimizer[1]), σ = $(minimizer[2])"
     axislegend(position=(1, 0))
     fig|>display
-    # save(joinpath(pic_dir, "Fitted_intensity_gaussian.png"), fig)
+    # save(joinpath(pic_dir, "fit_gaussian_HeNe.png"), fig)
 end
 
 
@@ -86,7 +86,7 @@ begin
     ax, _ = scatterlines(fig[1, 1], data_itsl_spectrum.lam, data_itsl_spectrum[:, " I"])
     ax.xlabel = "λ [nm]"
     ax.ylabel = "Intensity"
-    ax, _ = scatterlines(fig[2, 1], dct(data_itsl_spectrum[:, " I"]))
+    ax, _ = stem(fig[2, 1], dct(data_itsl_spectrum[:, " I"]))
     ax.xlabel="Index"
     ax.ylabel="DCT of intensity"
     fig|>display
@@ -99,7 +99,7 @@ begin
     ax, _ = scatterlines(fig[1, 1], data_itsl_spectrum.lam, data_itsl_spectrum[:, " I"])
     ax.xlabel = "λ [nm]"
     ax.ylabel = "Intensity"
-    ax, _ = scatterlines(fig[2, 1], idct(data_itsl_spectrum[:, " I"]))
+    ax, _ = stem(fig[2, 1], idct(data_itsl_spectrum[:, " I"]))
     ax.xlabel="Index"
     ax.ylabel="IDCT of intensity"
     fig|>display
@@ -117,7 +117,7 @@ for i in (1:5)
     ax, _ = scatterlines(fig[1, 1], df.lam, df.I)
     ax.xlabel="λ [nm]"
     ax.ylabel="Intensity"
-    ax, _ = scatterlines(fig[2, 1], dct(df.I))
+    ax, _ = stem(fig[2, 1], dct(df.I))
     ax.xlabel="Index"
     ax.ylabel="DCT of intensity"
     # Makie.inline!(false)
