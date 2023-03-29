@@ -1,14 +1,18 @@
+using Symbolics
+@variables x B
+Dx = Differential(x)
+
+once_differentiated = Dx(1/cosh(B*x)) |> expand_derivatives |> simplify
+Dx(once_differentiated) |> expand_derivatives |> simplify
+
+##¤
+
 using DifferentialEquations
 using FFTW
-using GLMakie; Makie.inline!(true)
+using GLMakie; Makie.inline!(true); update_theme!(resolution=(1000, 1000), fontsize=30)
 using LinearAlgebra     # For norm
-using AbbreviatedStackTraces
-update_theme!(resolution=(1000, 1200), fontsize=30)
-##
-"""
-k₀ = 2π/x_span
-"""
 
+##
 """
 k₀ = 2π/x_span
 """
@@ -24,6 +28,9 @@ function approximate_derivative(evaluated_points::AbstractVector, k₀::Real; to
     return output
 end
 
+"""
+k₀ = 2π/x_span
+"""
 function approximate_2nd_derivative(evaluated_points::AbstractVector, k₀::Real; tol=1e-10, check=false)
     dft = fft(evaluated_points)
     N = length(evaluated_points)
@@ -37,71 +44,52 @@ function approximate_2nd_derivative(evaluated_points::AbstractVector, k₀::Real
 end
 
 
-##¤ Saving setup and parameters in `p`
-function parameters(N::Integer; tol=2)  # Function, because want to update for convergence study
-    x_max = 10
-    x_min = -x_max
+##¤ Saving setup and parameters in `p`. `check` and `tol` are for approximate_derivative
+function parameters(N::Integer; A=1, tol=2, check=false)  # Function, because want to update for convergence study
+    L = 50
+    x_min = -L/2
+    x_max = L/2
     xs = range(x_min, x_max, N+1); xs=xs[begin:end-1]
-    t_max = 4π
+    t_max = 20π
     tspan = (0, t_max)
     dt = 1/N * 1.0
     k₀ = 2π/(x_max-x_min)
 
-    ω = 0.5
-    κ = 0.5
-    # κ = 0.25
-    return (;tol, κ, ω, xs, k₀, tspan, dt)
+    B = A/√2
+    Ω = B^2
+    return (;tol, check, A, B, Ω, xs, k₀, tspan, dt)
 end
-p = parameters(50)
 
-#¤ "Implement function that represent Hamiltonian"
-function Hψ(ψ, p)
-    (;k₀, tol, xs) = p      # NamedTuple descructuring
-    ∂ₓ²ψ = approximate_2nd_derivative(ψ, k₀; tol)
-    return @. 1/2 * (-∂ₓ²ψ + xs^2 * ψ)
-    # return @. 1/2 * (-∂ₓ²ψ + xs^4 * ψ)
-end
 ##¤ du: slope vector (will be updated)
 #¤  u: current state
 #¤  p: parameters
 #¤  t: time dependence (not used)
-function update_slope_schr!(du, u, p, t)
-    du .= Hψ(u, p) ./ im
-    # ∂ₓ²u = approximate_2nd_derivative(u, k₀; tol)
-    # @. du = 1/2im * (-∂ₓ²u + xs^2*u)
+function update_slope_NL_schr!(du, u, p, t)
+    ∂ₓ²u = approximate_2nd_derivative(u, p.k₀; tol=p.tol, check=p.check)
+    @. du = 1/im * (∂ₓ²u + abs2(u)*u)
     return nothing
 end
 
-u_ref_func(t, xs) = @. exp(-p.κ*xs^2 - im*p.ω*t)
-function Hψ_ref(t, p)
-    ψ = u_ref_func(t, p.xs)
-    return Hψ(ψ, p)
-end
+u_ref_func(t, p) = @. p.A/cosh(p.B * p.xs) * cis(-p.Ω*t)
 
-u0 = u_ref_func(0, p.xs)
-prob = ODEProblem(update_slope_schr!, u0, p.tspan, p)
+p = parameters(200, A=1)
+u0 = u_ref_func(0, p)
+prob = ODEProblem(update_slope_NL_schr!, u0, p.tspan, p)
 sol = solve(prob, RK4(); adaptive=false, p.dt)
 
 post_processor(solution) = reduce(hcat, solution) .|> abs2
 log10_offset(x) = log10(x+1e-7)
 # scale = identity
-# scale = log10
+scale = log10
 # scale = log10_offset
 
-u_ref = [u_ref_func(t, p.xs) for t in sol.t]
+u_ref = [u_ref_func(t, p) for t in sol.t]
 u_resid = sol.u - u_ref 
 
 sol_u_processed = sol.u |> post_processor .|> scale
 u_ref_processed = u_ref |> post_processor .|> scale
 u_resid_processed = u_resid |> post_processor .|> scale
 
-begin
-    energy_expectationval = [ψ' * Hψ(ψ, p) * step(p.xs) for ψ in sol.u]
-    lines(sol.t, energy_expectationval.|>real, label="Real part", axis=(xlabel="Time", ylabel="Energy"))
-    lines!(sol.t, energy_expectationval.|>imag, label="Imag part")
-    axislegend(position=(0, 0.5))
-    current_figure()|>display
-end
 function get_lims(data...)  # Useful for setting common colorbars
     extremas = extrema.(data)
     lowest = minimum(getindex.(extremas, 1))
@@ -188,14 +176,14 @@ end
 
 p = parameters(100)
 length(p.xs)
-# u0 = u_ref_func(0, p.xs)
+u0 = u_ref_func(0, p.xs)
 # u0 = ComplexF64[exp(-0.25x^2) for x in p.xs]
 # u0 = ComplexF64[exp(-0.25(x-4)^2) for x in p.xs]
 # u0 = ComplexF64[exp(-0.5(x-4)^2) for x in p.xs]   #¤ Not even changing shape, just oscillatin
 # u0 = ComplexF64[exp(-2x^2) for x in p.xs]         #¤ "Breathing"/"pumping"
 # u0 = ComplexF64[exp(  -2(x-4)^2) for x in p.xs]   #¤ "Pumping" + oscillation
 # u0 = ComplexF64[exp(  -2(x-4)^2) - exp(  -2(x+4)^2) for x in p.xs]
-u0 = ComplexF64[exp(  -2(x-4)^2) + exp(  -2(x+4)^2) for x in p.xs]
+# u0 = ComplexF64[exp(  -2(x-4)^2) + exp(  -2(x+4)^2) for x in p.xs]
 prob = ODEProblem(update_slope_schr!, u0, p.tspan, p)
 sol = solve(prob, RK4(); adaptive=false, p.dt)
 

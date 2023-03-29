@@ -28,8 +28,6 @@ N = 100     #* Number of points
 L = 2π
 xs = range(0, length=N, step=L/N)    # End exlusive range from 0 to L with N points
 k₀ = 2π/L
-approximate_derivative([sin(x) for x in range(0, 2π, 101)[begin:end-1]], 1)|>display
-approximate_derivative(sin.(xs), k₀)|>display
 ##* 2
 using FFTW
 using ForwardDiff
@@ -47,6 +45,9 @@ function approximate_derivative(evaluated_points::AbstractVector, k₀::Real; to
     max_imag_part ≥ tol  &&  @warn("Largest imaginary part of derivative is $(round(max_imag_part, sigdigits=5))")
     return output
 end
+
+# approximate_derivative([sin(x) for x in range(0, 2π, 101)[begin:end-1]], 1)|>display
+approximate_derivative(cospi.(2*xs), k₀)|>display
 
 function plot_true_and_approx_derivs(f, xs=xs, k₀=k₀)
     evaluated_points = f.(xs)
