@@ -122,7 +122,7 @@ plot!(title = "Energy of wavefunction")
 
 
 
-ψ_prop = @. log10(abs(ψ_tot)^2 .+10^-7) #10^-7 to better see behaviour
+ψ_prop = @. log10(abs(ψ_tot)^2 +10^-7) #10^-7 to better see behaviour
 # ψ_prop = @. (abs(ψ_tot)^2)
 
 ψplot = heatmap(t, x, ψ_prop)
@@ -143,7 +143,7 @@ plot!(title = "Propapility of wavefunction |ψ|²")
 # heatmap(real(ψ_anal))
 # heatmap(real(ψ_tot))
 
-ψ_anal_prop = @. log10(abs(ψ_tot)^2 .+10^-7)
+ψ_anal_prop = @. log10(abs(ψ_tot)^2 +10^-7)
 # ψ_anal_prop = @. (abs(ψ_tot)^2)
 ψplot_anal = heatmap(t, x, ψ_anal_prop)
 xlabel!("Normalized time, t [ ]")
@@ -151,7 +151,7 @@ ylabel!("Normalized position, x [ ]")
 plot!(title = "Analytical propapility of wavefunction |ψ|²")
 
 residual = ψ_tot-ψ_anal
-log_abs_residual = @. log10(abs(residual).+10^(-14)) #+10^-14 to not get -∞ in plot
+log_abs_residual = @. log10(abs(residual) +10^(-14)) #+10^-14 to not get -∞ in plot
 
 ψplot_residual = heatmap(t, x, log_abs_residual)
 xlabel!("Normalized time, t [ ]")
