@@ -12,7 +12,13 @@ using FFTW
 using GLMakie; Makie.inline!(true); update_theme!(resolution=(1000, 1000), fontsize=30)
 using LinearAlgebra     # For norm
 
-##
+function get_lims(data...)  # Useful for setting common colorbars
+    extremas = extrema.(data)
+    lowest = minimum(getindex.(extremas, 1))
+    highest = maximum(getindex.(extremas, 2))
+    return (lowest, highest)
+end
+
 """
 k₀ = 2π/x_span
 """
@@ -44,7 +50,7 @@ function approximate_2nd_derivative(evaluated_points::AbstractVector, k₀::Real
 end
 
 
-##¤ Saving setup and parameters in `p`. `check` and `tol` are for approximate_derivative
+##¤ Function to get a NamedTuple of parameters. `check` and `tol` are for approximate_derivative
 function parameters(N::Integer; A=1, tol=2, check=false)  # Function, because want to update for convergence study
     L = 50
     x_min = -L/2
@@ -60,65 +66,119 @@ function parameters(N::Integer; A=1, tol=2, check=false)  # Function, because wa
     return (;tol, check, A, B, Ω, xs, k₀, tspan, dt)
 end
 
-##¤ du: slope vector (will be updated)
-#¤  u: current state
-#¤  p: parameters
-#¤  t: time dependence (not used)
-function update_slope_NL_schr!(du, u, p, t)
+u_ref_func(t, p) = @. p.A/cosh(p.B * p.xs) * cis(-p.Ω*t)
+post_processor(solution) = reduce(hcat, solution) .|> abs2 |> transpose
+log10_offset(x) = log10(x+1e-7)
+
+function update_slope_schr_full!(du, u, p, t)  #¤ For task b
     ∂ₓ²u = approximate_2nd_derivative(u, p.k₀; tol=p.tol, check=p.check)
     @. du = 1/im * (∂ₓ²u + abs2(u)*u)
     return nothing
 end
+function update_slope_schr_dispersive!(du, u, p, t)  #¤ For task c
+    ∂ₓ²u = approximate_2nd_derivative(u, p.k₀; tol=p.tol, check=p.check)
+    @. du = 1/im * (∂ₓ²u)
+    return nothing
+end
+function update_slope_schr_NL!(du, u, p, t)  #¤ For task c
+    @. du = 1/im * (abs2(u)*u)
+    return nothing
+end
 
-u_ref_func(t, p) = @. p.A/cosh(p.B * p.xs) * cis(-p.Ω*t)
-
-p = parameters(200, A=1)
+##¤ b) Building on last week's script, solve new problem for L=50, N=200, tₘₐₓ = 20π
+p = parameters(200, A=√2)
 u0 = u_ref_func(0, p)
-prob = ODEProblem(update_slope_NL_schr!, u0, p.tspan, p)
+prob = ODEProblem(update_slope_schr_full!, u0, p.tspan, p)
 sol = solve(prob, RK4(); adaptive=false, p.dt)
+u_ref = [u_ref_func(t, p) for t in sol.t]
+u_resid = sol.u - u_ref 
 
-post_processor(solution) = reduce(hcat, solution) .|> abs2
-log10_offset(x) = log10(x+1e-7)
 # scale = identity
 scale = log10
 # scale = log10_offset
-
-u_ref = [u_ref_func(t, p) for t in sol.t]
-u_resid = sol.u - u_ref 
 
 sol_u_processed = sol.u |> post_processor .|> scale
 u_ref_processed = u_ref |> post_processor .|> scale
 u_resid_processed = u_resid |> post_processor .|> scale
 
-function get_lims(data...)  # Useful for setting common colorbars
-    extremas = extrema.(data)
-    lowest = minimum(getindex.(extremas, 1))
-    highest = maximum(getindex.(extremas, 2))
-    return (lowest, highest)
-end
-
 let  #¤ Plotting
     clims = get_lims(sol_u_processed, u_ref_processed)
-    fig, ax, hm1 = heatmap(p.xs, sol.t, sol_u_processed, colorrange=clims)
-    ax.xlabel="x"
-    ax.ylabel="time"
+    fig, ax, hm1 = heatmap(sol.t, p.xs, sol_u_processed, colorrange=clims)
+    ax.ylabel="x"
+    ax.xlabel="t"
     ax.title = "Numerical solution"
-    ax2, hm2 = heatmap(fig[2, 1], p.xs, sol.t, u_ref_processed, colorrange=clims)
-    ax2.xlabel="x"
-    ax2.ylabel="time"
+    ax2, hm2 = heatmap(fig[2, 1], sol.t, p.xs, u_ref_processed, colorrange=clims)
+    ax2.ylabel="x"
+    ax2.xlabel="t"
     ax2.title = "Reference solution"
-    ax3, hm3 = heatmap(fig[3, 1], p.xs, sol.t, u_resid_processed)#, colorrange=clims)
-    ax3.xlabel="x"
-    ax3.ylabel="time"
+    ax3, hm3 = heatmap(fig[3, 1], sol.t, p.xs, u_resid_processed)#, colorrange=clims)
+    ax3.ylabel="x"
+    ax3.xlabel="t"
     ax3.title = "Residuals"
     Colorbar(fig[1:2, 2], colorrange=clims)
-    # Colorbar(fig[2, 2], hm2)
     Colorbar(fig[3, 2], hm3)
-    #Colorbar(fig[:, 2], colorrange=clims)
     Label(fig[0, :], string("Scale = ", scale))
     display(fig)
 end
 
+##¤ c) Remove nonlinear term |a|²a, use gaussian initial conditions
+
+p = parameters(200, A=√2)
+u0 = u_ref_func(0, p)
+
+#¤ Gaussians
+# u0 = ComplexF64[exp(-0.25x^2) for x in p.xs]
+# u0 = ComplexF64[exp(-0.25(x-4)^2) for x in p.xs]
+# u0 = ComplexF64[exp(-0.5(x-4)^2) for x in p.xs]   #¤ Not even changing shape, just oscillatin
+# u0 = ComplexF64[exp(-2x^2) for x in p.xs]         #¤ "Breathing"/"pumping"
+# u0 = ComplexF64[exp(  -2(x-4)^2) for x in p.xs]   #¤ "Pumping" + oscillation
+# u0 = ComplexF64[exp(  -2(x-4)^2) - exp(  -2(x+4)^2) for x in p.xs]
+# u0 = ComplexF64[exp(  -2(x-4)^2) + exp(  -2(x+4)^2) for x in p.xs]
+
+#¤ From back of sheet
+# u0 = ComplexF64[10*exp(-1/30 * (x-5)^2) for x in p.xs]
+# u0 = @. √8 / cosh(2*p.xs)                       |> ComplexF64
+# u0 = @. √2*exp(0.1im*p.xs) / cosh(p.xs)         |> ComplexF64
+u0 = @. √8*exp(-0.2im*p.xs) / cosh(2*p.xs+20) + √8*exp(0.1im*p.xs) / cosh(2*p.xs-30) - √8/cosh(2*p.xs)   |> ComplexF64
+# u0 = @. √8 / cosh(p.xs)                         |> ComplexF64
+
+
+scale = log10_offset
+for update_slope! in (update_slope_schr_full!, update_slope_schr_dispersive!, update_slope_schr_NL!)|>reverse
+    prob = ODEProblem(update_slope!, u0, p.tspan, p)
+    sol = solve(prob, RK4(); adaptive=false, p.dt)
+    u_ref = [u_ref_func(t, p) for t in sol.t]
+    u_resid = sol.u - u_ref 
+    sol_u_processed = sol.u |> post_processor .|> scale
+    u_ref_processed = u_ref |> post_processor .|> scale
+    u_resid_processed = u_resid |> post_processor .|> scale
+
+    fig, ax, hm = heatmap(sol.t, p.xs, sol_u_processed)
+    ax.ylabel="x"
+    ax.xlabel="t"
+    ax.title = "Magnitude"
+    ax2, hm2 = heatmap(fig[2, 1], sol.t, p.xs, reduce(hcat, sol.u) |>transpose .|> angle .|> rad2deg)
+    ax2.ylabel="x"
+    ax2.xlabel="t"
+    ax2.title = "Phase"
+    Label(fig[0, :], string("Scale = ", scale, "\nEquation = ", update_slope!), tellwidth=false)
+    Colorbar(fig[1, 2], hm)
+    Colorbar(fig[2, 2], hm2)
+    display(fig)
+end
+
+
+
+
+
+
+
+
+
+
+
+
+##¤=== Stuff fron last week ===¤##
 ##¤ Convergence study
 
 function L∞∞(N)
@@ -193,7 +253,7 @@ sol_u_processed = sol.u |> post_processor .|> scale
 let  #¤ Plotting
     fig, ax, hm = heatmap(p.xs, sol.t, sol_u_processed)
     ax.xlabel="x"
-    ax.ylabel="time"
+    ax.ylabel="t"
     ax.title = "Numerical solution"
     ax2, hm2 = heatmap(fig[2, 1], p.xs, sol.t, angle.(reduce(hcat, sol.u)))
     Label(fig[0, :], string("Scale = ", scale), tellwidth=false)

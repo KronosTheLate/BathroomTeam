@@ -113,15 +113,15 @@ let  #¤ Plotting
     clims = get_lims(sol_u_processed, u_ref_processed)
     fig, ax, hm1 = heatmap(p.xs, sol.t, sol_u_processed, colorrange=clims)
     ax.xlabel="x"
-    ax.ylabel="time"
+    ax.ylabel="t"
     ax.title = "Numerical solution"
     ax2, hm2 = heatmap(fig[2, 1], p.xs, sol.t, u_ref_processed, colorrange=clims)
     ax2.xlabel="x"
-    ax2.ylabel="time"
+    ax2.ylabel="t"
     ax2.title = "Reference solution"
     ax3, hm3 = heatmap(fig[3, 1], p.xs, sol.t, u_resid_processed)#, colorrange=clims)
     ax3.xlabel="x"
-    ax3.ylabel="time"
+    ax3.ylabel="t"
     ax3.title = "Residuals"
     Colorbar(fig[1:2, 2], colorrange=clims)
     # Colorbar(fig[2, 2], hm2)
@@ -205,7 +205,7 @@ sol_u_processed = sol.u |> post_processor .|> scale
 let  #¤ Plotting
     fig, ax, hm = heatmap(p.xs, sol.t, sol_u_processed)
     ax.xlabel="x"
-    ax.ylabel="time"
+    ax.ylabel="t"
     ax.title = "Numerical solution"
     ax2, hm2 = heatmap(fig[2, 1], p.xs, sol.t, angle.(reduce(hcat, sol.u)))
     Label(fig[0, :], string("Scale = ", scale), tellwidth=false)
