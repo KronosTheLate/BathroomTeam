@@ -68,6 +68,12 @@ t=range(t₀,t₁,Nt)
 # ψ=@. 0.05*exp(-1/30*x^2)
 # ψ=@. 15*exp(-1/30*(x-5)^2) #Maximum useable abmplitude, else NaN
 
+
+# B=2
+# A=sqrt(2)*B
+# Ω=B^2
+# ψ_anal = A./cosh.(B*x) # Similar to below with B=2, and A=sqrt(8)
+
 # ψ =@. sqrt(8)/cosh(2*x)
 # ψ =@. sqrt(2)*exp(0.1*im*x)/cosh(x)
 # ψ =@. sqrt(8)*exp(-0.2*im*x)/cosh(2*x+30) - sqrt(8)/cosh(2*x)
@@ -142,7 +148,7 @@ heatmap(angle.(ψ_tot))
 
 
 ## Part c
-B=1
+B=2
 A=sqrt(2)*B
 Ω=B^2
 ψ_anal = A./cosh.(B*x) * transpose(exp.(-im*Ω*t))
@@ -150,7 +156,7 @@ A=sqrt(2)*B
 # heatmap(real(ψ_anal))
 # heatmap(real(ψ_tot))
 
-ψ_anal_prop = @. log10(abs(ψ_tot)^2 .+10^-7)
+ψ_anal_prop = @. log10(abs(ψ_anal)^2 .+10^-7)
 # ψ_anal_prop = @. (abs(ψ_tot)^2)
 ψplot_anal = heatmap(t, x, ψ_anal_prop)
 xlabel!("t [ ]")
@@ -162,7 +168,7 @@ log_abs_residual = @. log10(abs(residual).+10^(-14)) #+10^-14 to not get -∞ in
 
 ψplot_residual = heatmap(t, x, log_abs_residual)
 xlabel!("t [ ]")
-ylabel!("x [ ]")
+ylabel!("log residual [ ]")
 plot!(title = "Residual for wavefunction |ψ|²")
 
 total_plot=plot(ψplot, ψplot_anal, ψplot_residual, layout=(3,1))
