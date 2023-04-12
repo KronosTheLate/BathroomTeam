@@ -68,6 +68,7 @@ end
 
 u_ref_func(t, p) = @. p.A/cosh(p.B * p.xs) * cis(-p.Ω*t)
 post_processor(solution) = reduce(hcat, solution) .|> abs2 |> transpose
+# post_processor(solution) = reduce(hcat, solution) .|> angle |> transpose
 log10_offset(x) = log10(x+1e-7)
 
 function update_slope_schr_full!(du, u, p, t)  #¤ For task b
@@ -84,7 +85,7 @@ function update_slope_schr_NL!(du, u, p, t)  #¤ For task c
     @. du = 1/im * (abs2(u)*u)
     return nothing
 end
-
+#! NonLinear, we expect phase accumilation
 ##¤ b) Building on last week's script, solve new problem for L=50, N=200, tₘₐₓ = 20π
 p = parameters(200, A=√2)
 u0 = u_ref_func(0, p)
@@ -115,6 +116,9 @@ let  #¤ Plotting
     ax3.ylabel="x"
     ax3.xlabel="t"
     ax3.title = "Residuals"
+    # xlims!(ax, 0, 3)
+    # xlims!(ax2, 0, 3)
+    # xlims!(ax3, 0, 3)
     Colorbar(fig[1:2, 2], colorrange=clims)
     Colorbar(fig[3, 2], hm3)
     Label(fig[0, :], string("Scale = ", scale))
@@ -124,34 +128,34 @@ end
 ##¤ c) Remove nonlinear term |a|²a, use gaussian initial conditions
 
 p = parameters(200, A=√2)
-u0 = u_ref_func(0, p)
+# u0 = u_ref_func(0, p)
 
 #¤ Gaussians
 # u0 = ComplexF64[exp(-0.25x^2) for x in p.xs]
 # u0 = ComplexF64[exp(-0.25(x-4)^2) for x in p.xs]
-# u0 = ComplexF64[exp(-0.5(x-4)^2) for x in p.xs]   #¤ Not even changing shape, just oscillatin
+# u0 = ComplexF64[2*exp(-0.5(x-4)^2) for x in p.xs]   #¤ Not even changing shape, just oscillatin
 # u0 = ComplexF64[exp(-2x^2) for x in p.xs]         #¤ "Breathing"/"pumping"
 # u0 = ComplexF64[exp(  -2(x-4)^2) for x in p.xs]   #¤ "Pumping" + oscillation
 # u0 = ComplexF64[exp(  -2(x-4)^2) - exp(  -2(x+4)^2) for x in p.xs]
-# u0 = ComplexF64[exp(  -2(x-4)^2) + exp(  -2(x+4)^2) for x in p.xs]
+u0 = ComplexF64[exp(  -2(x-4)^2) + exp(  -2(x+4)^2) for x in p.xs]
 
 #¤ From back of sheet
 # u0 = ComplexF64[10*exp(-1/30 * (x-5)^2) for x in p.xs]
 # u0 = @. √8 / cosh(2*p.xs)                       |> ComplexF64
 # u0 = @. √2*exp(0.1im*p.xs) / cosh(p.xs)         |> ComplexF64
-u0 = @. √8*exp(-0.2im*p.xs) / cosh(2*p.xs+20) + √8*exp(0.1im*p.xs) / cosh(2*p.xs-30) - √8/cosh(2*p.xs)   |> ComplexF64
-# u0 = @. √8 / cosh(p.xs)                         |> ComplexF64
+# u0 = @. √8*exp(-0.2im*p.xs) / cosh(2*p.xs+20) + √2*exp(0.1im*p.xs) / cosh(1*p.xs-15) #- √8/cosh(2*p.xs)   |> ComplexF64
+# u0 = @. √2 / cosh(p.xs) * 1.9                         |> ComplexF64
 
 
 scale = log10_offset
-for update_slope! in (update_slope_schr_full!, update_slope_schr_dispersive!, update_slope_schr_NL!)|>reverse
+for update_slope! in (update_slope_schr_full!, update_slope_schr_dispersive!, update_slope_schr_NL!)[1:1]#|>reverse
     prob = ODEProblem(update_slope!, u0, p.tspan, p)
     sol = solve(prob, RK4(); adaptive=false, p.dt)
-    u_ref = [u_ref_func(t, p) for t in sol.t]
-    u_resid = sol.u - u_ref 
+    # u_ref = [u_ref_func(t, p) for t in sol.t]
+    # u_resid = sol.u - u_ref 
     sol_u_processed = sol.u |> post_processor .|> scale
-    u_ref_processed = u_ref |> post_processor .|> scale
-    u_resid_processed = u_resid |> post_processor .|> scale
+    # u_ref_processed = u_ref |> post_processor .|> scale
+    # u_resid_processed = u_resid |> post_processor .|> scale
 
     fig, ax, hm = heatmap(sol.t, p.xs, sol_u_processed)
     ax.ylabel="x"
