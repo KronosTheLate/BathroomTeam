@@ -1,3 +1,8 @@
+if occursin("dennishb", homedir())
+    using Pkg
+    Pkg.activate("ComputationalPhysics", shared=true)
+end
+using Trapz  # For numerical integration
 using LinearAlgebra
 using GLMakie; Makie.inline!(true)
 ##
@@ -11,7 +16,6 @@ mesh_func(100)
 
 function M_func(mesh::AbstractVector)
     internal_inds = eachindex(mesh)[begin+1:end-1]
-    N = length(internal_inds)
 
     M_diagonal = 1/3 .* [mesh[i+1] - mesh[i-1] for i in internal_inds]
     M_subdiagonal = 1/6 .* [mesh[i+1]-mesh[i] for i in internal_inds[begin+1:end]]
@@ -25,17 +29,24 @@ function M_func(mesh::AbstractVector)
 end
 M_func(mesh_func(100))
 
-function S_func(mesh::AbstractVector, v=identity)
+function S_func(mesh::AbstractVector, v=x->1)
     internal_inds = eachindex(mesh)[begin+1:end-1]
-    N = length(internal_inds)
 
-    v != identity  && error("v!=identity is not implemented")
-
-    S_diagonal = [1/(mesh[i+1] - mesh[i]) + 1/(mesh[i] - mesh[i-1]) for i in internal_inds]
-    S_subdiagonal = [-1/(mesh[i]-mesh[i-1]) for i in internal_inds[begin+1:end]]
-    S_superdiagonal = [-1/(mesh[i+1]-mesh[i]) for i in internal_inds[begin:end-1]]
+    #¤ "Assume explicitly that v(x) is constant on each element"
+    for i in eachindex(mesh)[begin:end-1]
+        if v(mesh[i]+eps()) != v(mesh[i+1]-eps())
+            @warn "v(mesh[i]+eps()) != v(mesh[i+1]-eps()) for i=$i. This means that v(x) is not constant on each element."
+        end
+    end
+    S_diagonal = [v(mesh[i]+eps())^2/(mesh[i+1] - mesh[i]) + v(mesh[i]-eps())^2/(mesh[i] - mesh[i-1]) for i in internal_inds]
+    S_subdiagonal = [-v(mesh[i]-eps())^2/(mesh[i]-mesh[i-1]) for i in internal_inds[begin+1:end]]
+    S_superdiagonal = [-v(mesh[i]+eps())^2/(mesh[i+1]-mesh[i]) for i in internal_inds[begin:end-1]]
     
-    if all(S_subdiagonal .≈ S_superdiagonal)
+    # S_diagonal = [v(mesh[i])^2/(mesh[i+1] - mesh[i]) + v(mesh[i])^2/(mesh[i] - mesh[i-1]) for i in internal_inds]
+    # S_subdiagonal = [-v(mesh[i])^2/(mesh[i]-mesh[i-1]) for i in internal_inds[begin+1:end]]
+    # S_superdiagonal = [-v(mesh[i])^2/(mesh[i+1]-mesh[i]) for i in internal_inds[begin:end-1]]
+    
+    if all(S_subdiagonal .≈ S_superdiagonal)  # ≈ because in creating the mesh, points can differ slightly due to which numbers are representable by floats
         return SymTridiagonal(S_diagonal, S_subdiagonal)
     else
         return Tridiagonal(S_subdiagonal, S_diagonal, S_superdiagonal)
@@ -79,7 +90,7 @@ begin
         numerical ./= most_extreme_val
         reference = sin.(mesh_interior .* π)
         residuals = numerical - reference
-        total_error_vec = norm(residuals)
+        total_error_vec = √trapz(mesh_interior, residuals.^2)
 
         # log10.(numerical)
         # log10.(reference)
@@ -110,4 +121,44 @@ begin
     scatterlines!(Ns, total_errors_val, label="Eigenvalue error")
     axislegend(position=:lb)
     display(current_figure())
+end
+
+##¤ d)
+
+"""
+    Find the field profiles of the eigenmodes of the 
+    PDF as posed in task d).
+    N is the number of elements at each side of the `boundry_node`
+"""
+function main2(N)
+    v(x) = x < √0.5 ? 1 : 0.1
+    bndry_node = √0.5
+    mesh_part1 = range(0, bndry_node, N+1)
+    mesh_part2 = range(bndry_node, 1, N+1)
+    mesh = [mesh_part1 ; mesh_part2[begin+1:end]]
+    M, S = M_func(mesh), S_func(mesh, v)
+    vals, vecs = eigen(S, M)
+    vecs = eachcol(vecs)
+    return (;bndry_node, mesh, M, S, vals, vecs)
+end
+
+let N = 100
+    sol = main2(N)
+    # return sol.mesh
+    mesh_interior = sol.mesh[begin+1:end-1]
+    sol.vecs[1]
+    print("ω = ")
+    @show √sol.vals[1]
+    fig = Figure()
+    ax = Axis(fig[1, 1], title="$N elements on each side, $(length(mesh_interior)) interior points total")
+    numerical = sol.vecs[1]
+    most_extreme_val = numerical[findmax(abs, numerical)[2]]
+    numerical ./= most_extreme_val
+    scatterlines!(ax, sol.mesh, [0; numerical; 0], label="Numerical")
+    display(fig)
+    # most_extreme_val = numerical[findmax(abs, numerical)[2]]
+    # numerical ./= most_extreme_val
+    # reference = sin.(mesh_interior .* π)
+    # residuals = numerical - reference
+    # total_error_vec = √trapz(mesh_interior, residuals.^2)
 end
