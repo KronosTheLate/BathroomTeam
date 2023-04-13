@@ -73,7 +73,7 @@ let N=100
     display(current_figure())
 end
 
-begin
+if false
     println("N\tResiduals")
     Ns = [10, 20, 50, 100, 200, 500, 1000]
     # Ns = sort([Ns; Ns.+1])
@@ -131,7 +131,8 @@ end
     N is the number of elements at each side of the `boundry_node`
 """
 function main2(N)
-    v(x) = x < √0.5 ? 1 : 0.1
+    v²(x) = x < √0.5 ? 1 : 0.1
+    v(x) = √v²(x)
     bndry_node = √0.5
     mesh_part1 = range(0, bndry_node, N+1)
     mesh_part2 = range(bndry_node, 1, N+1)
@@ -142,9 +143,10 @@ function main2(N)
     return (;bndry_node, mesh, M, S, vals, vecs)
 end
 
-let N = 100
+let N = 201
     sol = main2(N)
-    # return sol.mesh
+    @show count(<(√0.5), sol.mesh)
+    @show count(>(√0.5), sol.mesh)
     mesh_interior = sol.mesh[begin+1:end-1]
     sol.vecs[1]
     print("ω = ")
@@ -155,6 +157,7 @@ let N = 100
     most_extreme_val = numerical[findmax(abs, numerical)[2]]
     numerical ./= most_extreme_val
     scatterlines!(ax, sol.mesh, [0; numerical; 0], label="Numerical")
+    vlines!([√0.5])
     display(fig)
     # most_extreme_val = numerical[findmax(abs, numerical)[2]]
     # numerical ./= most_extreme_val
