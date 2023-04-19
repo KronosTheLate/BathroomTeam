@@ -34,8 +34,8 @@ for (jj,N) in enumerate(Ns)
     h=step(mesh)
 
     # Initialize and calculate mass and stiffness matrix. See formula on slides
-    ℳ = zeros(N,N)
-    𝒮 = zeros(N,N)
+    ℳ = zeros(N,N) # Could optimize by not initilializing and store full matrices, when only tri-diagonal
+    𝒮 = zeros(N,N) # Could optimize by not initilializing and store full matrices, when only tri-diagonal
     v=ones(N+1) # NOTE that v is N+1 long
     # N+1 is the number of elements. So one v-value for each element
 
@@ -111,8 +111,8 @@ end
 eigenvalue_error=ω.-ω_anal
 
 hs=L./Ns
-error_plot=plot(hs,error, xaxis=:log, yaxis=:log, label="Mode shape error")
-plot!(hs,eigenvalue_error, xaxis=:log, yaxis=:log, label="Eigenvalue error")
+error_plot=plot(hs,error, xaxis=:log, yaxis=:log, label="Mode shape error", markershape=:cross)
+plot!(hs,eigenvalue_error, xaxis=:log, yaxis=:log, label="Eigenvalue error", markershape=:cross)
 xlabel!("Step size []")
 ylabel!("Error []")
 plot!(title="Convergence plot")
