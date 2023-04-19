@@ -66,16 +66,21 @@ function main1(N)
     return (;M, S, vals, vecs)
 end
 
-let N=100
-    scatterlines(main1(N).vecs[1], label="Numerical")
+function norm_to_one(v::AbstractVector)
+    most_extreme_val = v[findmax(abs, v)[2]]
+    v ./= most_extreme_val
+end
+
+let N=10
+    scatterlines(main1(N).vecs[1]|>norm_to_one, label="Numerical")
     scatterlines!(sin.(mesh_func(N)[begin+1:end-1]*π), label="Analytical")
     axislegend()
     display(current_figure())
 end
 
-if false
+if true
     println("N\tResiduals")
-    Ns = [10, 20, 50, 100, 200, 500, 1000]
+    Ns = [10, 20, 50, 100, 200, 500, 1000][begin:end-1]
     # Ns = sort([Ns; Ns.+1])
     # Ns = [round(Int, 10 * 1.2^i) for i in 0:20]
     total_errors_vec = Float64[]
@@ -86,10 +91,12 @@ if false
         mesh_interior = mesh_func(N)[begin+1:end-1]
         sol = main1(N)
         numerical = sol.vecs[1]
-        most_extreme_val = numerical[findmax(abs, numerical)[2]]
-        numerical ./= most_extreme_val
+        numerical .= norm_to_one(numerical)
+        # most_extreme_val = numerical[findmax(abs, numerical)[2]]
+        # numerical ./= most_extreme_val
         reference = sin.(mesh_interior .* π)
         residuals = numerical - reference
+        # total_error_vec = norm(residuals, Inf)
         total_error_vec = √trapz(mesh_interior, residuals.^2)
 
         # log10.(numerical)
@@ -141,6 +148,17 @@ function main2(N)
     vals, vecs = eigen(S, M)
     vecs = eachcol(vecs)
     return (;bndry_node, mesh, M, S, vals, vecs)
+end
+
+let 
+    N = 21
+    v²(x) = x < √0.5 ? 1 : 0.1
+    v(x) = √v²(x)
+    bndry_node = √0.5
+    mesh_part1 = range(0, bndry_node, N+1)
+    mesh_part2 = range(bndry_node, 1, N+1)
+    mesh = [mesh_part1 ; mesh_part2[begin+1:end]]
+    vscodedisplay(S_func(mesh, v))
 end
 
 let N = 201
