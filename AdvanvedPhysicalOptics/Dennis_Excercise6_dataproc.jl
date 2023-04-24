@@ -51,7 +51,7 @@ begin
     OPL_linbo = @. thickness_linbo/(cos(asin(1/linbo_nₒ_1064nm * sind(corrected_angle_linbo)))) * linbo_nₑ_532nm
     minima_OPL_linbo = [1.12037, 1.1278, 1.1353, 1.1428] ./ 10^3
     maxima_OPL_linbo = minima_OPL_linbo .+ 0.5*diff(minima_OPL_linbo[1:2])
-    scatterlines(OPL_linbo .* 10^3, current_linbo, axis=(title=L"\text{LiNbO}_3", xlabel="Optical path length inside crystal [mm]", ylabel="Current [mA]"))
+    scatterlines(OPL_linbo .* 10^3, current_linbo, axis=(title=L"\text{LiNbO}_3", xlabel="Optical path length inside crystal [mm]", ylabel="Current [mA]", xtickformat=vals->string.(round.(vals*1000, digits=2), "μm")))
     vlines!(minima_OPL_linbo .* 10^3, color=:red, label="Minima")
     vlines!(maxima_OPL_linbo .* 10^3, color=:green, label="Maxima")
     axislegend("Manually determined", position=:rt)
@@ -62,7 +62,7 @@ begin
     GPL_linbo = OPL_linbo ./ linbo_nₑ_532nm
     minima_GPL_linbo = minima_OPL_linbo ./ linbo_nₑ_532nm
     maxima_GPL_linbo = maxima_OPL_linbo ./ linbo_nₑ_532nm
-    scatterlines(GPL_linbo .* 10^3, current_linbo, axis=(title=L"\text{LiNbO}_3", xlabel="Geometrical path length inside crystal [mm]", ylabel="Current [mA]"))
+    scatterlines(GPL_linbo .* 10^3, current_linbo, axis=(title=L"\text{LiNbO}_3", xlabel="Geometrical path length inside crystal", ylabel="Current [mA]", xtickformat=vals->string.(round.(vals*1000, digits=2), "μm")))
     vlines!(minima_GPL_linbo .* 10^3, color=:red, label="Minima")
     vlines!(maxima_GPL_linbo .* 10^3, color=:green, label="Maxima")
     axislegend("Manually determined", position=:rt)
@@ -76,6 +76,7 @@ rel_dev_linbo = (coherence_length_linbo - theoretical_coherence_length_linbo)/th
 
 
 ##¤ KTP
+##TODO - take n inside KTP to be (n_y_1064nm+n_z_1064nm)/2
 begin
     sheet_KTP = sheet["KTP"]
     angle_KTP, current_KTP = eachcol(sheet_KTP["A2:B84"].|>float)#|>vscodedisplay
@@ -89,9 +90,36 @@ begin
     display(current_figure())
     save(joinpath(homedir(), "Pictures", "Lab6_rawdata_KTP.png"), current_figure())
 end
-# DataInspector(); display(current_figure())
-original_first_minima_angles_KTP = (-13, 15)
-corrected_angle_KTP = original_angle_KTP .- mean(original_first_minima_angles_KTP)
-scatterlines(corrected_angle_KTP, current_KTP, axis=(title="KTP", xlabel="Angle [°]", ylabel="Current [mA]"))
 
+thickness_KTP = 1000e-6
+KTP_nx_532nm = 1.77803
+KTP_ny_532nm = 1.7886
+KTP_nz_532nm = 1.8887
+KTP_nx_1064nm = 1.73773
+KTP_ny_1064nm = 1.7453
+KTP_nz_1064nm = 1.8297
+
+begin
+    original_first_minima_angles_KTP = (-13.3, 15) # Manually tuned to match end
+    corrected_angle_KTP = original_angle_KTP .- mean(original_first_minima_angles_KTP)
+    GPL_KTP = thickness_KTP ./ cos.(asin.(1/mean([KTP_ny_1064nm, KTP_nz_1064nm]) * sind.(corrected_angle_KTP)))
+    minima_GPL_KTP = [1.009, 1.023, 1.037, 1.051] .* 1e-3#[1.12037, 1.1278, 1.1353, 1.1428]
+    maxima_GPL_KTP = minima_GPL_KTP .+ 0.5*diff(minima_GPL_KTP[1:2])
+    scatterlines(GPL_KTP, current_KTP, axis=(title="KTP", xlabel="Geometrical path length inside crystal", ylabel="Current [mA]", xtickformat=vals->string.(round.(vals*1000, sigdigits=3), "mm")))
+    xlims!(nothing, 1.085e-3)
+    vlines!(minima_GPL_KTP, color=:red, label="Minima")
+    vlines!(maxima_GPL_KTP, color=:green, label="Maxima")
+    axislegend("Manually determined", position=:rt)
+    display(current_figure())
+    save(joinpath(homedir(), "Pictures", "Lab6_geometrical_path_length_KTP.png"), current_figure())
+end
+
+coherence_length_KTP = mean(diff(sort([minima_GPL_KTP; maxima_GPL_KTP])))
+coherence_length_KTP * 1e6  # in μm
+theoretical_coherence_length_KTP = 242e-6
+rel_dev_KTP = (coherence_length_KTP - theoretical_coherence_length_KTP)/theoretical_coherence_length_KTP
+
+# DataInspector(); display(current_figure())
+scatterlines(corrected_angle_KTP, current_KTP, axis=(title="KTP", xlabel="Angle [°]", ylabel="Current [mA]"))
+map(vals->string.(vals*10^3, "m"), 1:10)
 #! OPL = thickness/(cos(asin(n₁/nₜ * sin(θ_incident)))) * n₂
