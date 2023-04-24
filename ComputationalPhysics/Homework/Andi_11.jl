@@ -419,7 +419,7 @@ function calculate_and_plot_all()
     E_tot = @. sqrt(Exs_tot^2+Eys_tot^2)
 
     # Note the clim, to not have exploding values
-    E_tot_plot = heatmap(xs, ys, reverse(rotl90(E_tot), dims = 1), aspect_ratio=:equal, clim=(-3,3)) # clim=(-3,3)
+    E_tot_plot = heatmap(xs, ys, reverse(rotl90(E_tot), dims = 1), aspect_ratio=:equal, clim=(0,3)) # clim=(0,3)
     scatter!(E_tot_plot, rs[:,1],rs[:,2], markershape=:circle, markersize=1.5, markercolor = :white , label="")#, zcolor=ρ.*(N/15))
     xlabel!("x [ ]")
     ylabel!("y [ ]")
@@ -559,7 +559,7 @@ calculate_and_plot_all()
 
 ##
 
-# Make sinusoid shape
+# Make sinusoid shape (open shape)
 
 N=80
 
