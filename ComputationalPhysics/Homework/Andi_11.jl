@@ -91,7 +91,7 @@ display(Φs_plot)
 ## Part b
 
 # Create N point charges on the surface of a circle.
-N=10
+N=100
 θ=range(0,2π,N+1)
 θ=θ[1:end-1] # Remove the double point in the start/end.
 
@@ -207,7 +207,9 @@ Ns=[10, 20, 50, 100, 200, 500, 1000, 2000]
 # Ns=[10]
 E_error=zeros(size(Ns,1))
 
-center=Int(round(NN/2)) # Note this only applies for a square space. Else take both dimensions into account.
+converge_point=Int(round(NN/2))+10 # Note this only applies for a square space. Else take both dimensions into account.
+                            # NOTE. Very important not to take a symmetry point. E.g. would not work for Φₑ=0, 
+                            #  due to this always being zero in simulation due to symmetry.
 
 for (jj,N) in enumerate(Ns)
     θ=range(0,2π,N+1)
@@ -253,13 +255,13 @@ for (jj,N) in enumerate(Ns)
     ##
     
     # Exs_tot = [Exₑₓₜ(x, y) for x in xs, y in ys] 
-    Exs_tot = Exₑₓₜ(xs[center], ys[center]) # Note only evaluated at center
+    Exs_tot = Exₑₓₜ(xs[converge_point], ys[converge_point]) # Note only evaluated at center
     for i in 1:size(rxs,1)
         # print(i)
         x′ = rxs[i]
         y′ = rys[i]
         # Exs_tot += ρ[i].*[𝒢_Ex(x, x′, y, y′) for x in xs, y in ys]
-        Exs_tot += ρ[i].*𝒢_Ex(xs[center], x′, ys[center], y′) # Note only evaluated at center
+        Exs_tot += ρ[i].*𝒢_Ex(xs[converge_point], x′, ys[converge_point], y′) # Note only evaluated at center
     end
     
     # Exs_tot_plot = heatmap(xs, ys, reverse(rotl90(Exs_tot), dims = 1), aspect_ratio=:equal)
@@ -268,13 +270,13 @@ for (jj,N) in enumerate(Ns)
     
     
     # Eys_tot = [Eyₑₓₜ(x, y) for x in xs, y in ys]
-    Eys_tot = Eyₑₓₜ(xs[center], ys[center]) # Note only evaluated at center
+    Eys_tot = Eyₑₓₜ(xs[converge_point], ys[converge_point]) # Note only evaluated at center
     for i in 1:size(rxs,1)
         # print(i)
         x′ = rxs[i]
         y′ = rys[i]
         # Eys_tot += ρ[i].*[𝒢_Ey(x, x′, y, y′) for x in xs, y in ys]
-        Eys_tot += ρ[i].*𝒢_Ey(xs[center], x′, ys[center], y′) # Note only evaluated at center
+        Eys_tot += ρ[i].*𝒢_Ey(xs[converge_point], x′, ys[converge_point], y′) # Note only evaluated at center
     end
     
     # Note the clim, since one point explode in value
@@ -431,7 +433,7 @@ end
 
 ## Defining square shape metal
 
-N=80
+N=200
 N=Int(round(N/4)*4)
 
 N_fourth = Int(N/4)+1 # +1 here since 1 point is removed later, due to corners overlap
@@ -465,7 +467,7 @@ calculate_and_plot_all()
 
 # Make flowershape
 
-N=80
+N=400
 N=Int(round(N/4)*4)
 
 N_fourth = Int(N/4)
@@ -512,7 +514,7 @@ calculate_and_plot_all()
 
 # Make pincushion distortion shape
 
-N=80
+N=400
 N=Int(round(N/4)*4)
 
 N_fourth = Int(N/4)
@@ -561,7 +563,7 @@ calculate_and_plot_all()
 
 # Make sinusoid shape (open shape)
 
-N=80
+N=400
 
 rxs = range(-1,1,N)
 
