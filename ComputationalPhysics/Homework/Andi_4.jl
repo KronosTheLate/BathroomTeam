@@ -200,14 +200,15 @@ N=10000
 for N in [10, 20, 50, 100, 200, 500, 1000, 2000, 4000, 8000]#, 16000, 32000, 64000]
 t=range(t₀,t₁,N)
 
+# ---
+# Choose method
 # xtable=euler(d_dt_kepler,x₀,t)
 
 xtable=leap_frog(d_dt_kepler,x₀,t)
 # display(x₀)
 
-
 # xtable=RK4(d_dt_kepler,x₀,t)
-
+# ---
 
 ω=1/norm([x₀[1];x₀[2]])^(3/2)
 r_anal=norm([x₀[1];x₀[2]])*[reshape(cos.(ω*t), 1, :); reshape(sin.(ω*t), 1, :)]

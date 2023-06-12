@@ -84,7 +84,7 @@ for (jj,N) in enumerate(Ns)
     # Analytical eigenmode (already normalized to max ampltidue being 1)
     mode_anal=sin.(ω_anal*mesh[2:end-1]) #Note this is normalized to 1 (max()=1)
     # Residual
-    residual=mode-mode_anal
+    residual=mode-mode_anal # Lecture 3 slides says analytical-numerical, so the other way around.
 
     # Plotting
     mode_plot=plot(mesh[2:end-1], mode, label="num")

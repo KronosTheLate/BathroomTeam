@@ -38,7 +38,7 @@ for ti in t
     p_now[2:end-1]=p_new
     if frame_nr <= ti/maximum(t)*Nframes
         frame_nr = frame_nr + 1
-        p_now_plot=plot(x,p_now, xlims=(minimum(xrange), maximum(xrange)), ylims=(-2, 2))
+        p_now_plot=plot(x,p_now, xlims=(minimum(x), maximum(x)), ylims=(-2, 2))
         display(p_now_plot)
         sleep(0.1)
     end

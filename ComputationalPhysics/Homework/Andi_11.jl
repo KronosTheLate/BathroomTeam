@@ -87,6 +87,10 @@ display(Φs_plot)
 
 
 # heatmap([1 2 3;4 5 6;7 8 9]) # To see how to rotate/orient matrix
+# heatmap(reverse([1 2 3;4 5 6;7 8 9]))
+# heatmap(reverse(rotl90([1 2 3;4 5 6;7 8 9]),dims=1))
+# # heatmap(rotl90(reverse([1 2 3;4 5 6;7 8 9],dims=1)))
+# heatmap(reverse(reverse([1 2 3;4 5 6;7 8 9],dims=2)))
 
 ## Part b
 

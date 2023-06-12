@@ -48,10 +48,10 @@ t=range(t₀,t₁,Nt)
 
 
 #Initial condition
-# B=1
-# A=sqrt(2)*B
-# Ω=B^2
-# ψ =@. A/cosh(B*x)
+B=1
+A=sqrt(2)*B
+Ω=B^2
+ψ =@. A/cosh(B*x)
 
 # κ=1/2
 # ω=1/2
@@ -78,7 +78,7 @@ t=range(t₀,t₁,Nt)
 # ψ =@. sqrt(2)*exp(0.1*im*x)/cosh(x)
 # ψ =@. sqrt(8)*exp(-0.2*im*x)/cosh(2*x+30) - sqrt(8)/cosh(2*x)
 # ψ =@. sqrt(8)/cosh(x)
-ψ =@. sqrt(8)*exp(-0.25*im*x)/cosh(2*x+20) - sqrt(8)/cosh(2*x) + sqrt(8)*exp(0.15*im*x)/cosh(2*x-30) - sqrt(8)*exp(-0.4*im*x)/cosh(2*x+40)
+# ψ =@. sqrt(8)*exp(-0.25*im*x)/cosh(2*x+20) - sqrt(8)/cosh(2*x) + sqrt(8)*exp(0.15*im*x)/cosh(2*x-30) - sqrt(8)*exp(-0.4*im*x)/cosh(2*x+40)
 
 
 
@@ -93,8 +93,8 @@ function ℋψ(ψ) # Note that this function returns the Hamiltonian ACTING ON �
     ψ_ddx=ifft(ψf_ddx)
 
     Hψ=@. (ψ_ddx+ abs2(ψ) *ψ)
-    # Hψ=@. (ψ_ddx)
-    # Hψ=@. (abs(ψ)^2 *ψ)
+    # Hψ=@. (ψ_ddx) # Only dispersion
+    # Hψ=@. (abs(ψ)^2 *ψ) # Only nonlinear term
     
     return Hψ    
 end
@@ -126,8 +126,8 @@ plot(t, real(E_tot), label="Real(E_tot)")
 plot!(t, imag(E_tot), label="Imag(E_tot)")
 xlabel!("t [ ]")
 ylabel!("Energy [ ]")
-plot!(title = "Energy of wavefunction")
-
+plot_energy_vs_time = plot!(title = "Energy of wavefunction")
+display(plot_energy_vs_time)
 
 
 

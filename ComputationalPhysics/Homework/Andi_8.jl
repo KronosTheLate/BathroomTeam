@@ -116,8 +116,8 @@ plot(t, real(E_tot), label="Real(E_tot)")
 plot!(t, imag(E_tot), label="Imag(E_tot)")
 xlabel!("Normalized time, t [ ]")
 ylabel!("Normalized Energy [ ]")
-plot!(title = "Energy of wavefunction")
-
+plot_energy_vs_time = plot!(title = "Energy of wavefunction")
+display(plot_energy_vs_time)
 
 
 
@@ -129,7 +129,7 @@ plot!(title = "Energy of wavefunction")
 xlabel!("Normalized time, t [ ]")
 ylabel!("Normalized position, x [ ]")
 plot!(title = "Propapility of wavefunction |ψ|²")
-
+display(ψplot)
 
 
 
@@ -274,7 +274,7 @@ end
 # plot(time_step_vec,error_tot_vec)
 # plot(time_step_vec,error_tot_vec, xaxis=:log, yaxis=:log)
 # plot(time_step_vec,error_tot_vec, yaxis=:log)
-plot(Ns,error_tot_vec, yaxis=:log)
+# plot(Ns,error_tot_vec, yaxis=:log)
 plot(Ns,error_tot_vec, xaxis=:log, yaxis=:log)
 xlabel!("N")
 ylabel!("Error")
